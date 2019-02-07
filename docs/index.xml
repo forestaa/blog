@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>My New Hugo Site</title>
+    <link>http://forestaa.github.io/blog/</link>
+    <description>Recent content on My New Hugo Site</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>ja-jp</language>
+    <lastBuildDate>Thu, 07 Feb 2019 14:04:50 +0900</lastBuildDate>
+    
+	<atom:link href="http://forestaa.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>ブログ始めました</title>
+      <link>http://forestaa.github.io/blog/posts/my-first-post/</link>
+      <pubDate>Thu, 07 Feb 2019 14:04:50 +0900</pubDate>
+      
+      <guid>http://forestaa.github.io/blog/posts/my-first-post/</guid>
+      <description>適当に興味あることをなんか書きます.</description>
+    </item>
+    
+  </channel>
+</rss>

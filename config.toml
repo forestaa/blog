@@ -1,4 +1,5 @@
-baseURL = "http://forestaa.github.io"
+baseURL = "http://forestaa.github.io/blog"
 languageCode = "ja-jp"
 title = "My New Hugo Site"
 theme = "ananke"
+publishDir = "docs"
