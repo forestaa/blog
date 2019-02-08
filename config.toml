@@ -1,5 +1,5 @@
 baseURL = "http://forestaa.github.io/blog"
 languageCode = "ja-jp"
-title = "My New Hugo Site"
+title = "Proof of Existence and Uniqueness"
 theme = "ananke"
 publishDir = "docs"
