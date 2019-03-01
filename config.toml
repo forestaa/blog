@@ -1,5 +1,5 @@
 baseURL = "http://forestaa.github.io/blog"
 languageCode = "ja-jp"
-title = "Proof of Existence and Uniqueness"
-theme = "ananke"
+title = "存在と一意性の証明"
+theme = "whiteplain"
 publishDir = "docs"
