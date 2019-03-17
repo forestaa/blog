@@ -2,12 +2,14 @@
 title: "LiquidHaskell 入門 その2"
 date: 2019-02-09T17:45:36+09:00
 draft: true
-tags: ["Haskell", "形式手法"]
+tags: ["Haskell", "形式検証"]
 ---
 
-# スコープ付き環境
 前回の記事ではLiquidHaskellの入門を行いました。
-今回はLiquidHaskellを用いて、通常のHaskellの型ではできない型をつけてみたいと思います。
+今回はLiquidHaskellを実際に用いて、通常のHaskellの型ではできない型をつけてみたいと思います。
+<!--more-->
+
+# スコープ付き環境
 今回題材とするのは、以下のようなスコープ付き環境を表現するデータ構造です。
 データとしては、これまでの操作を記録するスタックと、idと値を結びつけるマップを持っています。
 操作としては、スコープの開始を表すBeginと値の挿入を表すPushがあります。
@@ -76,10 +78,7 @@ test = flip evalStateT empty $ do
 また、スタックに行った操作が記録され、endScopeが呼ばれるとBeginまで解放されていることも分かります。
 {{< highlight bash >}}
 $ stack ghci
-GHCi, version 8.6.3: http://www.haskell.org/ghc/  :? for help
-[1 of 2] Compiling Env              ( src/Env.hs, interpreted )
-[2 of 2] Compiling Main             ( app/Main.hs, interpreted )
-Ok, two modules loaded.
+...
 *Main Env> test
 Env {stack = [], env = fromList []}
 Env {stack = [Push "x"], env = fromList [("x",[10])]}
@@ -93,14 +92,14 @@ Env {stack = [Push "x"], env = fromList [("x",[10])]}
 ところで先ほどのコードをコンパイルすると以下の警告が出ます。
 警告はWincomplete-patternsですが、lookupに対してはidに束縛されたリストが空の場合、endScopeに対してはスタックが空の場合のパターンが足りていないようです。
 {{< highlight bash >}}
-/home/foresta/playground/src/Env.hs:6:1: warning: [-Wincomplete-patterns]
+/src/Env.hs:6:1: warning: [-Wincomplete-patterns]
     Pattern match(es) are non-exhaustive
     In a case alternative: Patterns not matched: (Just [])
    |
 12 | lookup id (Env _ e) = case Map.lookup id e of
    |                       ^^^^^^^^^^^^^^^^^^^^^^^...
 
-/home/foresta/playground/src/Env.hs:6:1: warning: [-Wincomplete-patterns]
+/src/Env.hs:6:1: warning: [-Wincomplete-patterns]
     Pattern match(es) are non-exhaustive
     In an equation for endScope: Patterns not matched: (Env [] _)
    |
@@ -186,23 +185,7 @@ endScope (Env (Begin : rest) e) = Env rest e
 実際にLiquidHaskellでコンパイルしてみましょう。
 {{< highlight bash >}}
 $ stack exec -- liquid src/Env.hs
-LiquidHaskell Version 0.8.4.0, Git revision ea8217bcdd78e550ef2b39237dc83fe2f1122b69
-Copyright 2013-18 Regents of the University of California. All Rights Reserved.
-
-
-**** DONE:  A-Normalization ****************************************************
- 
-
-**** DONE:  Extracted Core using GHC *******************************************
- 
-
-**** DONE:  Transformed Core ***************************************************
- 
-Working 178% [============================================================================]
-
-**** DONE:  annotate ***********************************************************
- 
-
+...
 **** RESULT: SAFE **************************************************************
 {{< /highlight >}}
 問題なさそうです。
@@ -279,27 +262,11 @@ testEval = print $ run s
 
 {{< highlight bash >}}
 $ stack exec -- liquid src/Liquid/Env.hs
-LiquidHaskell Version 0.8.4.0, Git revision ea8217bcdd78e550ef2b39237dc83fe2f1122b69
-Copyright 2013-18 Regents of the University of California. All Rights Reserved.
-
-
-**** DONE:  A-Normalization ****************************************************
- 
-
-**** DONE:  Extracted Core using GHC *******************************************
- 
-
-**** DONE:  Transformed Core ***************************************************
- 
-Working 163% [=============================================================================]
-
-**** DONE:  annotate ***********************************************************
- 
-
+...
 **** RESULT: UNSAFE ************************************************************
 
 
- /mnt/c/Users/tdaic/OneDrive/playground/Haskell/src/Liquid/Env.hs:(111,29)-(116,18): Error: Liquid Type Mismatch
+/src/Liquid/Env.hs:(111,29)-(116,18): Error: Liquid Type Mismatch
 
  111 | evalExp (EScope s e) env0 = do
  112 |   let env1 = beginScope env0
@@ -323,5 +290,4 @@ Working 163% [==================================================================
 さらに、検証された関数を用いて簡単な言語処理系の実装してみました。
 実際に誤ったコードを書いたときに型検査に失敗するところも確認し、LiquidHaskellは確かに有用であることが分かりました。
 
-次回は先ほどのコードをStateモナドを用いてリファクタリングしてみたいと思います。
-その際に、現状のLiquidHaskellの限界について触れたいと思います。
+次回は先ほどのコードの状態モナドを用いたリファクタリングを通して、現状のLiquidHaskellの限界について見ていきたいと思います。
