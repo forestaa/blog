@@ -1,23 +1,41 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Proof of Existence and Uniqueness</title>
+    <title>存在と一意性の証明</title>
     <link>http://forestaa.github.io/blog/</link>
-    <description>Recent content on Proof of Existence and Uniqueness</description>
+    <description>Recent content on 存在と一意性の証明</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Thu, 07 Feb 2019 14:04:50 +0900</lastBuildDate>
+    <lastBuildDate>Fri, 22 Mar 2019 15:53:19 +0900</lastBuildDate>
     
 	<atom:link href="http://forestaa.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
+      <title>LiquidHaskell 入門 その1</title>
+      <link>http://forestaa.github.io/blog/posts/liquidhaskell1/</link>
+      <pubDate>Fri, 22 Mar 2019 15:53:19 +0900</pubDate>
+      
+      <guid>http://forestaa.github.io/blog/posts/liquidhaskell1/</guid>
+      <description>&lt;p&gt;今回から何回かに分けて &lt;strong&gt;LiquidHaskell&lt;/strong&gt;と&lt;strong&gt;F&lt;/strong&gt;*の比較記事を書きたいと思います。
+数か月前にいつか触ろうと思っていたLiquidHaskellを試す機会がありました。
+やりたかったことがLiquidHaskellだけでは達成できなかったのでF*も試してみました。
+その時に見つけた差異を記事にしてみます。
+先にネタバレしておくと、HoareモナドはLiquidHaskellではできない?けどF*なら当たり前のように使えるよねっていう話なので、面白そうと思う方は読んでいただけると嬉しいです。
+今回の記事では、LiquidHaskellの基礎をまとめることにします。
+Haskellを触ったことがある人なら読める内容にしているつもりです。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
       <title>ブログ始めました</title>
       <link>http://forestaa.github.io/blog/posts/my-first-post/</link>
-      <pubDate>Thu, 07 Feb 2019 14:04:50 +0900</pubDate>
+      <pubDate>Fri, 22 Mar 2019 15:52:50 +0900</pubDate>
       
       <guid>http://forestaa.github.io/blog/posts/my-first-post/</guid>
-      <description>適当に興味あることをなんか書きます.</description>
+      <description>&lt;p&gt;みなさん、初めまして。
+forestaと申します。
+大学院を卒業して、何かやったことをまとめるところとしてブログを始めることにしました。
+よろしくお願いします。&lt;/p&gt;</description>
     </item>
     
   </channel>
