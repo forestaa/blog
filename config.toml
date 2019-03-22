@@ -18,3 +18,8 @@ summaryLength = 200
   identifier = "archives"
   url = "/archives/"
   weight = 3
+[[menu.main]]
+  name = "About"
+  identifier = "about"
+  url = "/about/"
+  weight = 4
