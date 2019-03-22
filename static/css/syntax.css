@@ -1,5 +1,5 @@
-/* Background */ .highlight .chroma { color: #f8f8f2; background-color: #272822 }
-/* Error */ .highlight .chroma .err { color: #960050; background-color: #1e0010 }
+/* Background */ .highlight .chroma { color: #f8f8f2; background-color: #272822; padding: 5px; }
+/* Error */ .highlight .chroma .err { color: #960050; background-color: #1e0010; padding: 5px; }
 /* LineTableTD */ .highlight .chroma .lntd { vertical-align: top; padding: 0; margin: 0; border: 0; }
 /* LineTable */ .highlight .chroma .lntable { border-spacing: 0; padding: 0; margin: 0; border: 0; width: 100%; overflow: auto; display: block; }
 /* LineHighlight */ .highlight .chroma .hl { background-color: #ffffcc; display: block; width: 100% }
