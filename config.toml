@@ -8,6 +8,8 @@ pygmentsUseClasses = true
 hasCJKLanguage = true
 summaryLength = 200
 
+disqusShortname = "forestaa-github-io"
+
 [[menu.main]]
   name = "Tags"
   identifier = "tags"
