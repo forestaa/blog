@@ -1,7 +1,7 @@
 ---
 title: "LiquidHaskell 入門 その2"
-date: 2019-02-09T17:45:36+09:00
-draft: true
+date: 2019-03-29T11:30:36+09:00
+draft: false
 tags: ["Haskell", "形式検証"]
 ---
 
