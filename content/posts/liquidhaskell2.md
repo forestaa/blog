@@ -84,14 +84,14 @@ $ stack ghci
 Env {stack = [], env = fromList []}
 Env {stack = [Push "x"], env = fromList [("x",[10])]}
 Env {stack = [Begin,Push "x"], env = fromList [("x",[10])]}
-Env {stack = [Push "x",Begin,Push "x"], env = fromList [("x",[12,10])]}
+Env {stack = [Push "x",Begin,Push "x"], env = fromList [("x",[12, 10])]}
 Env {stack = [Push "x"], env = fromList [("x",[10])]}
 {{< /highlight >}}
 
 
 # Refinement Typeをつけてみる
 ところで先ほどのコードをコンパイルすると以下の警告が出ます。
-警告は```Wincomplete-patterns```ですが、```lookup```に対しては```id```に束縛されたリストが空の場合、```endScope```に対してはスタックが空の場合のパターンが足りていないようです。
+警告は```Wincomplete-patterns```で、```lookup```に対しては```id```に束縛されたリストが空の場合、```endScope```に対してはスタックが空の場合のパターンが足りていないようです。
 {{< highlight bash >}}
 /src/Env.hs:6:1: warning: [-Wincomplete-patterns]
     Pattern match(es) are non-exhaustive
@@ -105,7 +105,8 @@ Env {stack = [Push "x"], env = fromList [("x",[10])]}
     In an equation for endScope: Patterns not matched: (Env [] _)
    |
 19 | endScope (Env (Push id : rest) e)  = endScope $ Env rest (Map.update pop id e)
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
 {{< /highlight >}}
 
 従って、これらの関数はMaybeモナドやEitherモナドに包んでエラーを表現するのがお行儀がよいです。
@@ -115,7 +116,7 @@ Env {stack = [Push "x"], env = fromList [("x",[10])]}
 1. ```endScope```が呼ばれる前に必ず```beginScope```が呼ばれている。
 
 1は```endScope```内で定義されている```pop```関数によって既に実現されています。
-リストが空になる時は環境から削除されます。
+リストが空になる時は環境から削除されるため、パターンマッチの時にリストが空になることはありません。
 2は、例えば言語処理系などでこれを用いる場合、構文解析の時点で```{}```の数が合っていることが保証されていることが多いため妥当な仮定と言えるでしょう。
 余計なモナドで包むことを避けるために、これらのルールをLiquid Haskellを用いて型で表現してみます。
 
@@ -151,7 +152,6 @@ scopeNum (Env s _) = beginNum s
 
 これらを用いて先ほど定義した関数にさらに細かい型を与えてみます。
 ```empty```はスコープが0の```Env```を返す、```insert```はスコープの大きさを変えない、といったような型を与えることができました。
-```lookup```には特に新しい型は与えません。
 ```beginScope```はスコープの深さを1増やす、```endScope```はスコープが空でない```Env```を受け取ってスコープの深さを1減らす、といったような型を与えることができます。
 ```endScope```には無限ループしないことを示すためにメトリックを与えています。
 スタックの長さは単調減少するので、無限ループしないことを示すためにはメトリックとしてスタックの長さ```[len (stack e)]```を与えてあげれば十分です。
@@ -186,7 +186,6 @@ endScope (Env (Begin : rest) e) = Env rest e
 これで先ほどの1,2のルールを表現することができました。
 実際にLiquidHaskellでコンパイルしてみましょう。
 今回は```ScopeOp```でバリアント型を用いたため、オプション```--exactdc```を使う必要があります。
-詳しくは[こちらのissue](https://github.com/ucsd-progsys/liquidhaskell/issues/1284)をご覧ください。
 ファイルの先頭に```{-@ LIQUID "--exactdc" @-}```を記述してもokです。
 {{< highlight bash >}}
 $ stack exec -- liquid src/Env.hs --exactdc
@@ -195,7 +194,7 @@ $ stack exec -- liquid src/Env.hs --exactdc
 {{< /highlight >}}
 問題なさそうです。
 
-# 実践: インタプリタ
+# 実践: 評価関数
 それでは先ほど作ったスコープ付き環境を用いて簡単な評価関数```eval```を実装してみます。
 対象とする言語は、Tiger本で扱われていたプログラミング言語Linearの算術式を制限したもので、構文は以下です。
 逐次実行、変数の割り当て、プリントができます。
@@ -254,7 +253,7 @@ evalExp (EScope s e) env0 = do
 
 
 ここで重要なのは、```evalExp```内の```EScope```のパターンマッチの部分です。
-ちゃんと```beginScope```と```endScope```で挟んであります。
+```beginScope```と```endScope```で挟んであります。
 例えば、ここのうち```endScope```をコメントアウトすると、以下のようにちゃんとエラーを報告してくれます。
 
 {{< highlight bash >}}
@@ -282,7 +281,7 @@ $ stack exec -- liquid src/Liquid/Env.hs
      env0 : {env0 : (Liquid.Env.Env GHC.Types.Int) | Liquid.Env.scopeNum env0 >= 0}
 {{< /highlight>}}
 
-それでは各自LiquidHaskellでコンパイルしたうえで、正しく動いているかテストしてみましょう。
+それではLiquidHaskellでコンパイルしたうえで、正しく動いているかテストしてみましょう。
 以下のテスト関数を用意してください。
 読みにくいですが、```a := 5 + 3; print [a, {a := 10, a}]```のようなプログラムをテストをしています。
 {{< highlight Haskell >}}
@@ -332,7 +331,8 @@ eval :: (MonadWriter [Int] m, MonadError EvalException m) => Stm -> StateT (Env 
 evalExp :: (MonadWriter [Int] m, MonadError EvalException m) => Exp -> StateT (Env Int) m Int
 {{< /highlight>}}
 
-そのため、Stateモナドの状態に対して事前条件・事後条件を設定したくなり、これが前回の記事の冒頭で触れたHoareモナドの正体となります。
-しかしながら、前回軽く触れたようにLiquidHaskellでは量化子のない述語論理式しか書けないため、そのままではHoareモナドが実装できないのですが、LiquidHaskellの発展的な機能?である**Abstract Refienement**、**Bounded Refinement**を用いるとHoareモナドを実現できます。
-次回ではAbstract Refinement、Bounded Refinementの解説をし、次々回でHoareモナドの実装をして上のコードのリファクタリングをしていきます。
-どうぞよろしくお願いいたします。
+そのため、Stateモナドの状態に対して事前条件・事後条件を設定したくなります。
+そしてこれが前回の記事の冒頭で触れたHoareモナドの正体となります。
+しかしながら、前回軽く触れたようにLiquidHaskellでは量化子のない述語論理式しか書けないため、そのままではHoareモナドが実装できません。
+ここでLiquidHaskellの発展的?な機能である**Abstract Refienement**、**Bounded Refinement**を用いてHoareモナドを実装してみます。
+次回はAbstract Refinement、Bounded Refinementの解説をし、次々回でHoareモナドの実装をして上のコードを書き直してみます。
