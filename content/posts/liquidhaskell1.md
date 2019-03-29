@@ -320,3 +320,16 @@ p ::= true
 - 言語を決定可能な範囲にしているため、自動検証が可能で基本的に証明を書く必要がない。
 
 次回は今回説明したことを用いて、スコープを持つ簡単な言語の評価関数を作ってみたいと思います。
+
+# (追記) 参考資料
+- [公式レポジトリ](https://github.com/ucsd-progsys/liquidhaskell)
+  - 情報が不足していることもありますが...
+- [公式ブログ](https://ucsd-progsys.github.io/liquidhaskell-blog/)
+  - 公式レポジトリにもあまり詳しく書いていない情報が載ってたりするので便利です。
+- [公式チュートリアル1](https://liquid.kosmikus.org/)
+- [公式チュートリアル2](http://ucsd-progsys.github.io/liquidhaskell-tutorial/book.pdf)
+  - 公式によるチュートリアルです。いくつかチュートリアルがあるのですが、この辺は読んだと思います。
+- [LiquidHaskellのインストールと学習方法](https://haskell.e-bigmoon.com/posts/2018/03-03-liquidhaskell-intro.html)
+  - [@waddlaw](https://twitter.com/waddlaw)さんの日本語によるチュートリアルです。最後に大量の参考資料がまとまっていてとても便利でした。
+- [LiquidHaskell コトハジメ](https://ccvanishing.hateblo.jp/entry/2016/12/24/193038)
+  - [@y_taka_23](https://twitter.com/y_taka_23)さんの日本語によるチュートリアルです。Boothで[解説書](https://dodgsonlabs.booth.pm/items/490689)も販売しています。
