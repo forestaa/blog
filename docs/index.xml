@@ -6,10 +6,20 @@
     <description>Recent content on 存在と一意性の証明</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Fri, 22 Mar 2019 15:53:19 +0900</lastBuildDate>
+    <lastBuildDate>Fri, 29 Mar 2019 11:30:36 +0900</lastBuildDate>
     
 	<atom:link href="http://forestaa.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>LiquidHaskell 入門 その2</title>
+      <link>http://forestaa.github.io/blog/posts/liquidhaskell2/</link>
+      <pubDate>Fri, 29 Mar 2019 11:30:36 +0900</pubDate>
+      
+      <guid>http://forestaa.github.io/blog/posts/liquidhaskell2/</guid>
+      <description>&lt;p&gt;&lt;a href=&#34;https://forestaa.github.io/blog/posts/liquidhaskell1/&#34;&gt;前回の記事&lt;/a&gt;ではLiquidHaskellの基礎を学びました。
+今回はLiquidHaskellを用いて、とあるデータ型に対して、通常のHaskellの型の上に、実装者の暗黙の意図を反映したより細かい型をつけてみたいと思います。&lt;/p&gt;</description>
+    </item>
     
     <item>
       <title>LiquidHaskell 入門 その1</title>

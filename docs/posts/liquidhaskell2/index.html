@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <title>LiquidHaskell 入門 その2 - 存在と一意性の証明</title>
+  <meta property="og:title" content="LiquidHaskell 入門 その2 - 存在と一意性の証明" />
+  <meta name="twitter:title" content="LiquidHaskell 入門 その2 - 存在と一意性の証明" />
+  <meta name="description" content="前回の記事ではLiquidHaskellの基礎を学びました。
+今回はLiquidHaskellを用いて、とあるデータ型に対して、通常のHaskellの型の上に、実装者の暗黙の意図を反映したより細かい型をつけてみたいと思います。">
+  <meta property="og:description" content="前回の記事ではLiquidHaskellの基礎を学びました。
+今回はLiquidHaskellを用いて、とあるデータ型に対して、通常のHaskellの型の上に、実装者の暗黙の意図を反映したより細かい型をつけてみたいと思います。">
+  <meta name="twitter:description" content="前回の記事ではLiquidHaskellの基礎を学びました。
+今回はLiquidHaskellを用いて、とあるデータ型に対して、通常のHaskellの型の上に、実装者の暗黙の意図を反映したより細かい型をつけてみたいと思います。">
+  <meta name="author" content=""/>
+  <meta property="og:site_name" content="存在と一意性の証明" />
+  <meta property="og:url" content="http://forestaa.github.io/blog/posts/liquidhaskell2/" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="generator" content="Hugo 0.54.0" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/katex.min.css" integrity="sha384-dbVIfZGuN1Yq7/1Ocstc1lUEm+AT+/rCkibIcC/OmWo5f0EA48Vf8CytHzGrSwbQ" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/katex.min.js" integrity="sha384-2BKqo+exmr9su6dir+qCw08N2ZKRucY4PrGQPPWU1A7FtlCGjmEGFqXCv5nyM5Ij" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "[[", right: "]]", display: true },
+                { left: "$",  right: "$",  display: false},
+            ]
+        });
+    });
+</script>
+
+
+  <link rel="stylesheet" href="/blog/css/style.css" media="all" />
+  <link rel="stylesheet" href="/blog/css/syntax.css" media="all" />
+  <link rel="stylesheet" href="/blog/css/custom.css" media="all" />
+
+  <script src="/blog/js/script.js"></script>
+  <script src="/blog/js/custom.js"></script>
+  <script defer src="/blog/js/fontawesome.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <nav class="site-navi">
+    <h1 class="site-title"><a href="/blog/">存在と一意性の証明</a></h1>
+    <ul class="site-navi-items">
+      <li class="site-navi-item-tags"><a href="/blog/tags/" title="Tags">Tags</a></li>
+      <li class="site-navi-item-archives"><a href="/blog/archives/" title="Archives">Archives</a></li>
+      <li class="site-navi-item-about"><a href="/blog/about/" title="About">About</a></li>
+    </ul>
+  </nav>
+</header>
+<hr class="site-header-bottom">
+
+  <div class="main" role="main">
+    <article class="article">
+      
+      
+      <h1 class="article-title">LiquidHaskell 入門 その2</h1>
+      
+      <hr class="article-title-bottom">
+      <ul class="article-meta">
+        <li class="article-meta-date"><time>March 29, 2019</time></li>
+        <li class="article-meta-tags">
+          <a href="/blog/tags/haskell/">
+            <i class="fas fa-tag"></i>
+            Haskell
+          </a>&nbsp;
+        </li>
+        <li class="article-meta-tags">
+          <a href="/blog/tags/%E5%BD%A2%E5%BC%8F%E6%A4%9C%E8%A8%BC/">
+            <i class="fas fa-tag"></i>
+            形式検証
+          </a>&nbsp;
+        </li>
+      </ul>
+      
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li><a href="#スコープ付き環境">スコープ付き環境</a></li>
+<li><a href="#refinement-typeをつけてみる">Refinement Typeをつけてみる</a></li>
+<li><a href="#実践-インタプリタ">実践: インタプリタ</a></li>
+<li><a href="#まとめ">まとめ</a></li>
+<li><a href="#次-々-回予告">次(々)回予告</a></li>
+</ul>
+</nav>
+</aside>
+      <p><a href="https://forestaa.github.io/blog/posts/liquidhaskell1/">前回の記事</a>ではLiquidHaskellの基礎を学びました。
+今回はLiquidHaskellを用いて、とあるデータ型に対して、通常のHaskellの型の上に、実装者の暗黙の意図を反映したより細かい型をつけてみたいと思います。</p>
+
+<h1 id="スコープ付き環境">スコープ付き環境</h1>
+
+<p>今回題材とするのはスコープ付きの言語の環境を表現する以下のようなデータ型です。
+データとしては、環境に対するこれまでの操作を記録するスタックと、<code>id</code>と値のリストを結びつけるマップ<code>Env</code>を持っています。
+操作<code>ScopeOp</code>としては、スコープの開始を表す<code>Begin</code>と環境への値の挿入を表す<code>Push</code>があります。
+この環境は各<code>id</code>に対して値のリストを持っており、同じ記号に対する値の挿入が起きるとリストの先頭に値を挿入します。
+スコープから出るときはスコープの開始前の環境に戻す必要があるのですが、これはスタックに積んだ操作を巻き戻すことによって実現します。
+このデータ型は<a href="https://www.amazon.co.jp/%E6%9C%80%E6%96%B0%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%A9%E6%A7%8B%E6%88%90%E6%8A%80%E6%B3%95-Andrew-W-Appel/dp/4798114685">Tiger本</a>から拝借しました。
+このデータ型をここではスコープ付き環境と呼ぶことにします。
+スコープ付き環境はスコープの概念のあるプログラミング言語のインタプリタでの変数の環境や、型検査時の型環境を表すことが可能です。
+Tiger本ではTiger言語の型検査器の実装等に実際に用いられていました。</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="kr">type</span> <span class="kt">Id</span> <span class="ow">=</span> <span class="kt">String</span>
+<span class="kr">data</span> <span class="kt">ScopeOp</span> <span class="ow">=</span> <span class="kt">Begin</span> <span class="o">|</span> <span class="kt">Push</span> <span class="kt">Id</span> <span class="kr">deriving</span> <span class="p">(</span><span class="kt">Eq</span><span class="p">,</span> <span class="kt">Show</span><span class="p">)</span>
+<span class="kr">data</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="p">{</span> <span class="nf">stack</span> <span class="ow">::</span> <span class="p">[</span><span class="kt">ScopeOp</span><span class="p">],</span> <span class="nf">env</span> <span class="ow">::</span> <span class="kt">Map</span><span class="o">.</span><span class="kt">Map</span> <span class="kt">Id</span> <span class="p">[</span><span class="nf">a</span><span class="p">]</span> <span class="p">}</span> <span class="kr">deriving</span> <span class="p">(</span><span class="kt">Eq</span><span class="p">,</span> <span class="kt">Show</span><span class="p">)</span></code></pre></div>
+
+<p>このデータ構造を操作する関数として以下のようなものがあります。
+<code>empty, insert, lookup</code>は通常のマップと同様な関数です。
+ただし、<code>insert</code>時にはスタックに<code>Push id</code>を積むことで、このスコープ内で<code>id</code>に値が束縛されたということを記録します。
+マップ標準の関数に加えて、<code>beginScope</code>と<code>endScope</code>という特徴的な関数があります。
+これらは文字通りスコープの開始、終了を行う関数です。
+<code>beginScope</code>はスタックに<code>Begin</code>を積みます。
+<code>endScope</code>はスタックの操作を<code>Begin</code>まで巻き戻します。
+スタックの先頭が<code>Push id</code>ならばマップから<code>id</code>のリストの先頭を<code>pop</code>し、リストが空になったらマップから<code>id</code>を消去します。
+スタックの先頭が<code>Begin</code>ならば、それをスタックから<code>pop</code>して終了します。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">empty</span> <span class="ow">::</span> <span class="kt">Env</span> <span class="nf">a</span>
+<span class="nf">empty</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="kt">[]</span> <span class="kt">Map</span><span class="o">.</span><span class="nf">empty</span>
+<span class="nf">insert</span> <span class="ow">::</span> <span class="kt">Id</span> <span class="ow">-&gt;</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="nf">a</span>
+<span class="nf">insert</span> <span class="nf">id</span> <span class="nf">a</span> <span class="p">(</span><span class="kt">Env</span> <span class="nf">s</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="p">{</span> <span class="nf">stack</span> <span class="ow">=</span> <span class="kt">Push</span> <span class="nf">id</span> <span class="kt">:</span> <span class="nf">s</span><span class="p">,</span> <span class="nf">env</span> <span class="ow">=</span> <span class="kt">Map</span><span class="o">.</span><span class="nf">alter</span> <span class="nf">f</span> <span class="nf">id</span> <span class="nf">e</span> <span class="p">}</span>
+  <span class="kr">where</span>
+    <span class="nf">f</span> <span class="kt">Nothing</span> <span class="ow">=</span> <span class="kt">Just</span> <span class="p">[</span><span class="nf">a</span><span class="p">]</span>
+    <span class="nf">f</span> <span class="p">(</span><span class="kt">Just</span> <span class="nf">as</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Just</span> <span class="p">(</span><span class="nf">a</span><span class="kt">:</span><span class="nf">as</span><span class="p">)</span>
+<span class="nf">lookup</span> <span class="ow">::</span> <span class="kt">Id</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">Maybe</span> <span class="nf">a</span>
+<span class="nf">lookup</span> <span class="nf">id</span> <span class="p">(</span><span class="kt">Env</span> <span class="kr">_</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="kr">case</span> <span class="kt">Map</span><span class="o">.</span><span class="nf">lookup</span> <span class="nf">id</span> <span class="nf">e</span> <span class="kr">of</span>
+  <span class="kt">Just</span> <span class="p">(</span><span class="nf">a</span><span class="kt">:</span><span class="kr">_</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="nf">return</span> <span class="nf">a</span>
+  <span class="kt">Nothing</span> <span class="ow">-&gt;</span> <span class="kt">Nothing</span>
+
+<span class="nf">beginScope</span> <span class="ow">::</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="nf">a</span>
+<span class="nf">beginScope</span> <span class="nf">e</span> <span class="ow">=</span> <span class="nf">e</span> <span class="p">{</span> <span class="nf">stack</span> <span class="ow">=</span> <span class="kt">Begin</span> <span class="kt">:</span> <span class="nf">stack</span> <span class="nf">e</span> <span class="p">}</span>
+<span class="nf">endScope</span> <span class="ow">::</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="nf">a</span>
+<span class="nf">endScope</span> <span class="p">(</span><span class="kt">Env</span> <span class="p">(</span><span class="kt">Push</span> <span class="nf">id</span> <span class="kt">:</span> <span class="nf">rest</span><span class="p">)</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="nf">endScope</span> <span class="o">$</span> <span class="kt">Env</span> <span class="nf">rest</span> <span class="p">(</span><span class="kt">Map</span><span class="o">.</span><span class="nf">update</span> <span class="nf">pop</span> <span class="nf">id</span> <span class="nf">e</span><span class="p">)</span>
+  <span class="kr">where</span>
+    <span class="nf">pop</span> <span class="kt">[]</span> <span class="ow">=</span> <span class="kt">Nothing</span>
+    <span class="nf">pop</span> <span class="p">[</span><span class="kr">_</span><span class="p">]</span> <span class="ow">=</span> <span class="kt">Nothing</span>
+    <span class="nf">pop</span> <span class="p">(</span><span class="kr">_</span><span class="kt">:</span><span class="nf">as</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Just</span> <span class="nf">as</span>
+<span class="nf">endScope</span> <span class="p">(</span><span class="kt">Env</span> <span class="p">(</span><span class="kt">Begin</span> <span class="kt">:</span> <span class="nf">rest</span><span class="p">)</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="nf">rest</span> <span class="nf">e</span></code></pre></div></p>
+
+<p>実際に使ってみましょう。
+以下のテストコードを走らせます。
+Stateモナドの状態にスコープ付き環境<code>Env Int</code>を与えています。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">testEnv</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="nb">()</span>
+<span class="nf">testEnv</span> <span class="ow">=</span> <span class="nf">flip</span> <span class="nf">evalStateT</span> <span class="nf">empty</span> <span class="o">$</span> <span class="kr">do</span>
+  <span class="nf">printState</span>
+  <span class="nf">modify</span> <span class="p">(</span><span class="nf">insert</span> <span class="s">&#34;x&#34;</span> <span class="mi">10</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="nf">printState</span>
+  <span class="nf">modify</span> <span class="nf">beginScope</span>      <span class="o">&gt;&gt;</span> <span class="nf">printState</span>
+  <span class="nf">modify</span> <span class="p">(</span><span class="nf">insert</span> <span class="s">&#34;x&#34;</span> <span class="mi">12</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="nf">printState</span>
+  <span class="nf">modify</span> <span class="nf">endScope</span>        <span class="o">&gt;&gt;</span> <span class="nf">printState</span>
+  <span class="kr">where</span>
+    <span class="nf">printState</span> <span class="ow">=</span> <span class="nf">get</span> <span class="o">&gt;&gt;=</span> <span class="nf">lift</span> <span class="o">.</span> <span class="nf">print</span></code></pre></div></p>
+
+<p>結果は以下のようになります。
+スコープから出るとスコープ内で挿入した<code>x = 12</code>が解放されていることが分かります。
+また、スタックに行った操作が記録され、<code>endScope</code>が呼ばれると<code>Begin</code>まで解放されていることも分かります。
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ stack ghci
+...
+*Main Env&gt; testEnv
+Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</span> <span class="o">[]</span>, <span class="nv">env</span> <span class="o">=</span> fromList <span class="o">[]}</span>
+Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</span> <span class="o">[</span>Push <span class="s2">&#34;x&#34;</span><span class="o">]</span>, <span class="nv">env</span> <span class="o">=</span> fromList <span class="o">[(</span><span class="s2">&#34;x&#34;</span>,<span class="o">[</span><span class="m">10</span><span class="o">])]}</span>
+Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</span> <span class="o">[</span>Begin,Push <span class="s2">&#34;x&#34;</span><span class="o">]</span>, <span class="nv">env</span> <span class="o">=</span> fromList <span class="o">[(</span><span class="s2">&#34;x&#34;</span>,<span class="o">[</span><span class="m">10</span><span class="o">])]}</span>
+Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</span> <span class="o">[</span>Push <span class="s2">&#34;x&#34;</span>,Begin,Push <span class="s2">&#34;x&#34;</span><span class="o">]</span>, <span class="nv">env</span> <span class="o">=</span> fromList <span class="o">[(</span><span class="s2">&#34;x&#34;</span>,<span class="o">[</span><span class="m">12</span>,10<span class="o">])]}</span>
+Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</span> <span class="o">[</span>Push <span class="s2">&#34;x&#34;</span><span class="o">]</span>, <span class="nv">env</span> <span class="o">=</span> fromList <span class="o">[(</span><span class="s2">&#34;x&#34;</span>,<span class="o">[</span><span class="m">10</span><span class="o">])]}</span></code></pre></div></p>
+
+<h1 id="refinement-typeをつけてみる">Refinement Typeをつけてみる</h1>
+
+<p>ところで先ほどのコードをコンパイルすると以下の警告が出ます。
+警告は<code>Wincomplete-patterns</code>ですが、<code>lookup</code>に対しては<code>id</code>に束縛されたリストが空の場合、<code>endScope</code>に対してはスタックが空の場合のパターンが足りていないようです。
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">/src/Env.hs:6:1: warning: <span class="o">[</span>-Wincomplete-patterns<span class="o">]</span>
+    Pattern match<span class="o">(</span>es<span class="o">)</span> are non-exhaustive
+    In a <span class="k">case</span> alternative: Patterns not matched: <span class="o">(</span>Just <span class="o">[])</span>
+   <span class="p">|</span>
+<span class="m">12</span> <span class="p">|</span> lookup id <span class="o">(</span>Env _ e<span class="o">)</span> <span class="o">=</span> <span class="k">case</span> Map.lookup id e of
+   <span class="p">|</span>                       ^^^^^^^^^^^^^^^^^^^^^^^...
+
+/src/Env.hs:6:1: warning: <span class="o">[</span>-Wincomplete-patterns<span class="o">]</span>
+    Pattern match<span class="o">(</span>es<span class="o">)</span> are non-exhaustive
+    In an equation <span class="k">for</span> endScope: Patterns not matched: <span class="o">(</span>Env <span class="o">[]</span> _<span class="o">)</span>
+   <span class="p">|</span>
+<span class="m">19</span> <span class="p">|</span> endScope <span class="o">(</span>Env <span class="o">(</span>Push id : rest<span class="o">)</span> e<span class="o">)</span>  <span class="o">=</span> endScope $ Env rest <span class="o">(</span>Map.update pop id e<span class="o">)</span>
+   <span class="p">|</span> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...</code></pre></div></p>
+
+<p>従って、これらの関数はMaybeモナドやEitherモナドに包んでエラーを表現するのがお行儀がよいです。
+しかしながら、これらは呼び出すときに以下のルールを定めることで、実際にはそのパターンにマッチすることはなく、問題にならないことが分かります。</p>
+
+<ol>
+<li><code>id</code>に束縛されている値のリストは空にならない</li>
+<li><code>endScope</code>が呼ばれる前に必ず<code>beginScope</code>が呼ばれている。</li>
+</ol>
+
+<p>1は<code>endScope</code>内で定義されている<code>pop</code>関数によって既に実現されています。
+リストが空になる時は環境から削除されます。
+2は、例えば言語処理系などでこれを用いる場合、構文解析の時点で<code>{}</code>の数が合っていることが保証されていることが多いため妥当な仮定と言えるでしょう。
+余計なモナドで包むことを避けるために、これらのルールをLiquid Haskellを用いて型で表現してみます。</p>
+
+<p>まず1を表現するために、<code>Env</code>の定義で値のリストの長さを0より大きいという型を与えてあげてみます。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="cm">{-@ data Env a = Env { stack :: [ScopeOp], env :: (Map Id { v: [a] | len v &gt; 0 })} @-}</span>
+<span class="kr">data</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="p">{</span> <span class="nf">stack</span> <span class="ow">::</span> <span class="p">[</span><span class="kt">ScopeOp</span><span class="p">],</span> <span class="nf">env</span> <span class="ow">::</span> <span class="kt">Map</span><span class="o">.</span><span class="kt">Map</span> <span class="kt">Id</span> <span class="p">[</span><span class="nf">a</span><span class="p">]}</span> <span class="kr">deriving</span> <span class="p">(</span><span class="kt">Eq</span><span class="p">,</span> <span class="kt">Show</span><span class="p">)</span></code></pre></div></p>
+
+<p>2を型で表現するためには、<code>Env</code>のスコープ数を表現することができるときれいに型がつきそうです。
+そこで、以下の補助関数を定義します。
+<code>beginNum</code>はスタック内の<code>Begin</code>の数、つまり現在のスコープの深さを計算します。
+前回は説明していなかったのですが、<code>measure</code>となる関数には停止性を保証しておく必要があるため、メトリクスを書いておきます。
+<code>scopeNum</code>は<code>Env</code>のスタックをに対して<code>beginNum</code>を適用します。
+これで<code>Env</code>のスコープ数を表現する準備が整いました。
+<code>NEEnv</code>はスタックのスコープが空でない<code>Env</code>、<code>EnvN</code>はスタックのスコープ数が第二引数<code>N</code>となっている<code>Env</code>、<code>EnvX</code>はスコープ数が第二引数の<code>Env</code>と等しい<code>Env</code>を表します。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="cm">{-@ measure beginNum @-}</span>
+<span class="cm">{-@ beginNum :: s: [ScopeOp] -&gt; Nat / [len s] @-}</span>
+<span class="nf">beginNum</span> <span class="ow">::</span> <span class="p">[</span><span class="kt">ScopeOp</span><span class="p">]</span> <span class="ow">-&gt;</span> <span class="kt">Int</span>
+<span class="nf">beginNum</span> <span class="kt">[]</span> <span class="ow">=</span> <span class="mi">0</span>
+<span class="nf">beginNum</span> <span class="p">(</span><span class="kt">Begin:</span><span class="nf">xs</span><span class="p">)</span> <span class="ow">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="nf">beginNum</span> <span class="nf">xs</span>
+<span class="nf">beginNum</span> <span class="p">(</span><span class="kr">_</span><span class="kt">:</span><span class="nf">xs</span><span class="p">)</span> <span class="ow">=</span> <span class="nf">beginNum</span> <span class="nf">xs</span>
+<span class="cm">{-@ measure scopeNum @-}</span>
+<span class="cm">{-@ scopeNum :: e: Env a -&gt; {n: Nat | n == beginNum (stack e) } @-}</span>
+<span class="nf">scopeNum</span> <span class="ow">::</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">Int</span>
+<span class="nf">scopeNum</span> <span class="p">(</span><span class="kt">Env</span> <span class="nf">s</span> <span class="kr">_</span><span class="p">)</span> <span class="ow">=</span> <span class="nf">beginNum</span> <span class="nf">s</span>
+
+<span class="cm">{-@ type NEEnv a = {e: Env a | scopeNum e &gt; 0} @-}</span>
+<span class="cm">{-@ type EnvN a N = {e: Env a | scopeNum e = N} @-}</span>
+<span class="cm">{-@ type EnvX a E = {e: Env a | scopeNum e = scopeNum E} @-}</span></code></pre></div></p>
+
+<p>これらを用いて先ほど定義した関数にさらに細かい型を与えてみます。
+<code>empty</code>はスコープが0の<code>Env</code>を返す、<code>insert</code>はスコープの大きさを変えない、といったような型を与えることができました。
+<code>lookup</code>には特に新しい型は与えません。
+<code>beginScope</code>はスコープの深さを1増やす、<code>endScope</code>はスコープが空でない<code>Env</code>を受け取ってスコープの深さを1減らす、といったような型を与えることができます。
+<code>endScope</code>には無限ループしないことを示すためにメトリックを与えています。
+スタックの長さは単調減少するので、無限ループしないことを示すためにはメトリックとしてスタックの長さ<code>[len (stack e)]</code>を与えてあげれば十分です。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="cm">{-@ empty :: EnvN a 0 @-}</span>
+<span class="nf">empty</span> <span class="ow">::</span> <span class="kt">Env</span> <span class="nf">a</span>
+<span class="nf">empty</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="kt">[]</span> <span class="kt">Map</span><span class="o">.</span><span class="nf">empty</span>
+<span class="cm">{-@ insert :: Id -&gt; a -&gt; e:Env a -&gt; EnvN a {scopeNum e} @-}</span>
+<span class="nf">insert</span> <span class="ow">::</span> <span class="kt">Id</span> <span class="ow">-&gt;</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="nf">a</span>
+<span class="nf">insert</span> <span class="nf">id</span> <span class="nf">a</span> <span class="p">(</span><span class="kt">Env</span> <span class="nf">s</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="p">{</span> <span class="nf">stack</span> <span class="ow">=</span> <span class="kt">Push</span> <span class="nf">id</span> <span class="kt">:</span> <span class="nf">s</span><span class="p">,</span> <span class="nf">env</span> <span class="ow">=</span> <span class="kt">Map</span><span class="o">.</span><span class="nf">alter</span> <span class="nf">f</span> <span class="nf">id</span> <span class="nf">e</span> <span class="p">}</span>
+  <span class="kr">where</span>
+    <span class="nf">f</span> <span class="kt">Nothing</span> <span class="ow">=</span> <span class="kt">Just</span> <span class="p">[</span><span class="nf">a</span><span class="p">]</span>
+    <span class="nf">f</span> <span class="p">(</span><span class="kt">Just</span> <span class="nf">as</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Just</span> <span class="p">(</span><span class="nf">a</span><span class="kt">:</span><span class="nf">as</span><span class="p">)</span>
+<span class="nf">lookup</span> <span class="ow">::</span> <span class="kt">Id</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">Maybe</span> <span class="nf">a</span>
+<span class="nf">lookup</span> <span class="nf">id</span> <span class="p">(</span><span class="kt">Env</span> <span class="kr">_</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="kr">case</span> <span class="kt">Map</span><span class="o">.</span><span class="nf">lookup</span> <span class="nf">id</span> <span class="nf">e</span> <span class="kr">of</span>
+  <span class="kt">Just</span> <span class="p">(</span><span class="nf">a</span><span class="kt">:</span><span class="kr">_</span><span class="p">)</span> <span class="ow">-&gt;</span> <span class="nf">return</span> <span class="nf">a</span>
+  <span class="kt">Nothing</span> <span class="ow">-&gt;</span> <span class="kt">Nothing</span>
+
+<span class="cm">{-@ beginScope :: e: Env a -&gt; EnvN a {1 + scopeNum e} @-}</span>
+<span class="nf">beginScope</span> <span class="ow">::</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="nf">a</span>
+<span class="nf">beginScope</span> <span class="nf">e</span> <span class="ow">=</span> <span class="nf">e</span> <span class="p">{</span> <span class="nf">stack</span> <span class="ow">=</span> <span class="kt">Begin</span> <span class="kt">:</span> <span class="nf">stack</span> <span class="nf">e</span> <span class="p">}</span>
+<span class="cm">{-@ endScope :: e: NEEnv a -&gt; EnvN a {scopeNum e - 1} / [len (stack e)] @-}</span>
+<span class="nf">endScope</span> <span class="ow">::</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="nf">a</span>
+<span class="nf">endScope</span> <span class="p">(</span><span class="kt">Env</span> <span class="p">(</span><span class="kt">Push</span> <span class="nf">id</span> <span class="kt">:</span> <span class="nf">rest</span><span class="p">)</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="nf">endScope</span> <span class="o">$</span> <span class="kt">Env</span> <span class="nf">rest</span> <span class="p">(</span><span class="kt">Map</span><span class="o">.</span><span class="nf">update</span> <span class="nf">pop</span> <span class="nf">id</span> <span class="nf">e</span><span class="p">)</span>
+  <span class="kr">where</span>
+    <span class="nf">pop</span> <span class="kt">[]</span> <span class="ow">=</span> <span class="kt">Nothing</span>
+    <span class="nf">pop</span> <span class="p">[</span><span class="kr">_</span><span class="p">]</span> <span class="ow">=</span> <span class="kt">Nothing</span>
+    <span class="nf">pop</span> <span class="p">(</span><span class="kr">_</span><span class="kt">:</span><span class="nf">as</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Just</span> <span class="nf">as</span>
+<span class="nf">endScope</span> <span class="p">(</span><span class="kt">Env</span> <span class="p">(</span><span class="kt">Begin</span> <span class="kt">:</span> <span class="nf">rest</span><span class="p">)</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="nf">rest</span> <span class="nf">e</span></code></pre></div></p>
+
+<p>これで先ほどの1,2のルールを表現することができました。
+実際にLiquidHaskellでコンパイルしてみましょう。
+今回は<code>ScopeOp</code>でバリアント型を用いたため、オプション<code>--exactdc</code>を使う必要があります。
+詳しくは<a href="https://github.com/ucsd-progsys/liquidhaskell/issues/1284">こちらのissue</a>をご覧ください。
+ファイルの先頭に<code>{-@ LIQUID &quot;--exactdc&quot; @-}</code>を記述してもokです。
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ stack <span class="nb">exec</span> -- liquid src/Env.hs --exactdc
+...
+**** RESULT: SAFE **************************************************************</code></pre></div>
+問題なさそうです。</p>
+
+<h1 id="実践-インタプリタ">実践: インタプリタ</h1>
+
+<p>それでは先ほど作ったスコープ付き環境を用いて簡単な評価関数<code>eval</code>を実装してみます。
+対象とする言語は、Tiger本で扱われていたプログラミング言語Linearの算術式を制限したもので、構文は以下です。
+逐次実行、変数の割り当て、プリントができます。
+<code>Exp</code>の<code>EScope Stm Exp</code>はスコープを作る構文で、左の<code>Stm</code>で定義した変数はそのスコープ内で有効で、右の<code>Exp</code>を評価した値を返します。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="kr">data</span> <span class="kt">Stm</span> <span class="ow">=</span> <span class="kt">SSeq</span> <span class="kt">Stm</span> <span class="kt">Stm</span>
+         <span class="o">|</span> <span class="kt">SAssign</span> <span class="kt">Id</span> <span class="kt">Exp</span>
+         <span class="o">|</span> <span class="kt">SPrint</span> <span class="p">[</span><span class="kt">Exp</span><span class="p">]</span>
+<span class="kr">data</span> <span class="kt">Exp</span> <span class="ow">=</span> <span class="kt">EVar</span> <span class="kt">Id</span>
+         <span class="o">|</span> <span class="kt">EInt</span> <span class="kt">Int</span>
+         <span class="o">|</span> <span class="kt">EPlus</span> <span class="kt">Exp</span> <span class="kt">Exp</span>
+         <span class="o">|</span> <span class="kt">EScope</span> <span class="kt">Stm</span> <span class="kt">Exp</span></code></pre></div></p>
+
+<p>これの<code>eval</code>を実装したものが以下です。
+<code>SPrint</code>はによる副作用はIOモナドでもよいのですが、MonadWriterで代用します。
+未定義変数へのアクセスが起こりうるので、MonadErrorを与えます。
+簡単のため、停止性検査を無効にしておきます。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="kr">data</span> <span class="kt">EvalException</span> <span class="ow">=</span> <span class="kt">UndefinedVariableException</span> <span class="kr">deriving</span> <span class="p">(</span><span class="kt">Show</span><span class="p">)</span>
+
+<span class="cm">{-@ lazy eval @-}</span>
+<span class="cm">{-@ eval :: (MonadWriter [Int] m, MonadThrow m) =&gt; Stm -&gt; e: Env Int -&gt; m ((), EnvX Int e)  @-}</span>
+<span class="nf">eval</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Stm</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="nf">m</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span>
+<span class="nf">eval</span> <span class="p">(</span><span class="nf">s1</span> <span class="p">`</span><span class="kt">SSeq</span><span class="p">`</span> <span class="nf">s2</span><span class="p">)</span> <span class="nf">env0</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="p">(</span><span class="kr">_</span><span class="p">,</span> <span class="nf">env1</span><span class="p">)</span> <span class="ow">&lt;-</span> <span class="nf">eval</span> <span class="nf">s1</span> <span class="nf">env0</span>
+  <span class="nf">eval</span> <span class="nf">s2</span> <span class="nf">env1</span>
+<span class="nf">eval</span> <span class="p">(</span><span class="nf">x</span> <span class="p">`</span><span class="kt">SAssign</span><span class="p">`</span> <span class="nf">e</span><span class="p">)</span> <span class="nf">env0</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="p">(</span><span class="nf">v</span><span class="p">,</span> <span class="nf">env1</span><span class="p">)</span> <span class="ow">&lt;-</span> <span class="nf">evalExp</span> <span class="nf">e</span> <span class="nf">env0</span>
+  <span class="nf">return</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="nf">insert</span> <span class="nf">x</span> <span class="nf">v</span> <span class="nf">env1</span><span class="p">)</span>
+<span class="nf">eval</span> <span class="p">(</span><span class="kt">SPrint</span> <span class="nf">es</span><span class="p">)</span> <span class="nf">env0</span> <span class="ow">=</span> <span class="p">(,)</span> <span class="nb">()</span> <span class="o">&lt;$&gt;</span> <span class="nf">foldl</span> <span class="nf">f</span> <span class="p">(</span><span class="nf">pure</span> <span class="nf">env0</span><span class="p">)</span> <span class="nf">es</span>
+  <span class="kr">where</span>
+    <span class="nf">f</span> <span class="nf">m</span> <span class="nf">e</span> <span class="ow">=</span> <span class="kr">do</span>
+      <span class="p">(</span><span class="nf">n</span><span class="p">,</span> <span class="nf">env&#39;</span><span class="p">)</span> <span class="ow">&lt;-</span> <span class="nf">evalExp</span> <span class="nf">e</span> <span class="o">=&lt;&lt;</span> <span class="nf">m</span>
+      <span class="nf">tell</span> <span class="p">[</span><span class="nf">n</span><span class="p">]</span>
+      <span class="nf">return</span> <span class="nf">env&#39;</span>
+
+<span class="cm">{-@ lazy evalExp @-}</span>
+<span class="cm">{-@ evalExp :: (MonadWriter [Int] m, MonadThrow m) =&gt; Exp -&gt; e: Env Int -&gt; m (Int, EnvX Int e)  @-}</span>
+<span class="nf">evalExp</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Exp</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="nf">m</span> <span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span>
+<span class="nf">evalExp</span> <span class="p">(</span><span class="kt">EVar</span> <span class="nf">x</span><span class="p">)</span> <span class="nf">env0</span> <span class="ow">=</span> <span class="kr">case</span> <span class="nf">lookup</span> <span class="nf">x</span> <span class="nf">env0</span> <span class="kr">of</span>
+  <span class="kt">Just</span> <span class="nf">v</span> <span class="ow">-&gt;</span> <span class="nf">return</span> <span class="p">(</span><span class="nf">v</span><span class="p">,</span> <span class="nf">env0</span><span class="p">)</span>
+  <span class="kt">Nothing</span> <span class="ow">-&gt;</span> <span class="nf">throwError</span> <span class="kt">UndefinedVariableException</span>
+<span class="nf">evalExp</span> <span class="p">(</span><span class="kt">EInt</span> <span class="nf">n</span><span class="p">)</span> <span class="nf">env0</span> <span class="ow">=</span> <span class="nf">return</span> <span class="p">(</span><span class="nf">n</span><span class="p">,</span> <span class="nf">env0</span><span class="p">)</span>
+<span class="nf">evalExp</span> <span class="p">(</span><span class="nf">e1</span> <span class="p">`</span><span class="kt">EPlus</span><span class="p">`</span> <span class="nf">e2</span><span class="p">)</span> <span class="nf">env0</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="p">(</span><span class="nf">v1</span><span class="p">,</span> <span class="nf">env1</span><span class="p">)</span> <span class="ow">&lt;-</span> <span class="nf">evalExp</span> <span class="nf">e1</span> <span class="nf">env0</span>
+  <span class="p">(</span><span class="nf">v2</span><span class="p">,</span> <span class="nf">env2</span><span class="p">)</span> <span class="ow">&lt;-</span> <span class="nf">evalExp</span> <span class="nf">e2</span> <span class="nf">env1</span>
+  <span class="nf">return</span> <span class="p">(</span><span class="nf">v1</span> <span class="o">+</span> <span class="nf">v2</span><span class="p">,</span> <span class="nf">env2</span><span class="p">)</span>
+<span class="nf">evalExp</span> <span class="p">(</span><span class="kt">EScope</span> <span class="nf">s</span> <span class="nf">e</span><span class="p">)</span> <span class="nf">env0</span> <span class="ow">=</span> <span class="kr">do</span>
+  <span class="kr">let</span> <span class="nf">env1</span> <span class="ow">=</span> <span class="nf">beginScope</span> <span class="nf">env0</span>
+  <span class="p">(</span><span class="kr">_</span><span class="p">,</span> <span class="nf">env2</span><span class="p">)</span> <span class="ow">&lt;-</span> <span class="nf">eval</span> <span class="nf">s</span> <span class="nf">env1</span>
+  <span class="p">(</span><span class="nf">v</span><span class="p">,</span> <span class="nf">env3</span><span class="p">)</span> <span class="ow">&lt;-</span> <span class="nf">evalExp</span> <span class="nf">e</span> <span class="nf">env2</span>
+  <span class="kr">let</span> <span class="nf">env4</span> <span class="ow">=</span> <span class="nf">endScope</span> <span class="nf">env3</span>
+  <span class="nf">return</span> <span class="p">(</span><span class="nf">v</span><span class="p">,</span> <span class="nf">env4</span><span class="p">)</span></code></pre></div></p>
+
+<p>ここで重要なのは、<code>evalExp</code>内の<code>EScope</code>のパターンマッチの部分です。
+ちゃんと<code>beginScope</code>と<code>endScope</code>で挟んであります。
+例えば、ここのうち<code>endScope</code>をコメントアウトすると、以下のようにちゃんとエラーを報告してくれます。</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ stack <span class="nb">exec</span> -- liquid src/Liquid/Env.hs
+...
+**** RESULT: UNSAFE ************************************************************
+
+
+/src/Liquid/Env.hs:<span class="o">(</span><span class="m">111</span>,29<span class="o">)</span>-<span class="o">(</span><span class="m">116</span>,18<span class="o">)</span>: Error: Liquid Type Mismatch
+
+ <span class="m">111</span> <span class="p">|</span> evalExp <span class="o">(</span>EScope s e<span class="o">)</span> <span class="nv">env0</span> <span class="o">=</span> <span class="k">do</span>
+ <span class="m">112</span> <span class="p">|</span>   <span class="nb">let</span> <span class="nv">env1</span> <span class="o">=</span> beginScope env0
+ <span class="m">113</span> <span class="p">|</span>   <span class="o">(</span>_, env2<span class="o">)</span> &lt;- <span class="nb">eval</span> s env1
+ <span class="m">114</span> <span class="p">|</span>   <span class="o">(</span>v, env3<span class="o">)</span> &lt;- evalExp e env2
+ <span class="m">115</span> <span class="p">|</span>   -- <span class="nb">let</span> <span class="nv">env4</span> <span class="o">=</span> endScope env3
+ <span class="m">116</span> <span class="p">|</span>   <span class="k">return</span> <span class="o">(</span>v, env3<span class="o">)</span>
+
+   Inferred <span class="nb">type</span>
+     VV : <span class="o">{</span>v : <span class="o">(</span>Liquid.Env.Env GHC.Types.Int<span class="o">)</span> <span class="p">|</span> Liquid.Env.scopeNum v &gt;<span class="o">=</span> <span class="m">0</span><span class="o">}</span>
+
+   not a subtype of Required <span class="nb">type</span>
+     VV : <span class="o">{</span>VV : <span class="o">(</span>Liquid.Env.Env GHC.Types.Int<span class="o">)</span> <span class="p">|</span> Liquid.Env.scopeNum <span class="nv">VV</span> <span class="o">==</span> Liquid.Env.scopeNum env0<span class="o">}</span>
+
+   In Context
+     env0 : <span class="o">{</span>env0 : <span class="o">(</span>Liquid.Env.Env GHC.Types.Int<span class="o">)</span> <span class="p">|</span> Liquid.Env.scopeNum env0 &gt;<span class="o">=</span> <span class="m">0</span><span class="o">}</span></code></pre></div>
+
+<p>それでは各自LiquidHaskellでコンパイルしたうえで、正しく動いているかテストしてみましょう。
+以下のテスト関数を用意してください。
+読みにくいですが、<code>a := 5 + 3; print [a, {a := 10, a}]</code>のようなプログラムをテストをしています。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">run</span> <span class="ow">::</span> <span class="kt">Stm</span> <span class="ow">-&gt;</span> <span class="kt">Either</span> <span class="kt">EvalException</span> <span class="p">((</span><span class="nb">()</span><span class="p">,</span> <span class="kt">Env</span> <span class="kt">Int</span><span class="p">),</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span>
+<span class="nf">run</span> <span class="nf">s</span> <span class="ow">=</span> <span class="nf">runWriterT</span> <span class="o">$</span> <span class="nf">eval</span> <span class="nf">s</span> <span class="nf">empty</span>
+
+<span class="cm">{-@ ignore testEval @-}</span>
+<span class="nf">testEval</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="nb">()</span>
+<span class="nf">testEval</span> <span class="ow">=</span> <span class="nf">print</span> <span class="o">$</span> <span class="nf">run</span> <span class="nf">s</span>
+  <span class="kr">where</span>
+    <span class="nf">s</span> <span class="ow">=</span>        <span class="p">(</span><span class="s">&#34;a&#34;</span> <span class="p">`</span><span class="kt">SAssign</span><span class="p">`</span> <span class="p">(</span><span class="kt">EInt</span> <span class="mi">5</span> <span class="p">`</span><span class="kt">EPlus</span><span class="p">`</span> <span class="kt">EInt</span> <span class="mi">3</span><span class="p">))</span> 
+        <span class="p">`</span><span class="kt">SSeq</span><span class="p">`</span> <span class="kt">SPrint</span> <span class="p">[</span> <span class="kt">EVar</span> <span class="s">&#34;a&#34;</span><span class="p">,</span> 
+                        <span class="kt">EScope</span> <span class="p">(</span><span class="s">&#34;a&#34;</span> <span class="p">`</span><span class="kt">SAssign</span><span class="p">`</span> <span class="kt">EInt</span> <span class="mi">10</span><span class="p">)</span> <span class="p">(</span><span class="kt">EVar</span> <span class="s">&#34;a&#34;</span><span class="p">)]</span> </code></pre></div></p>
+
+<p>実行結果は以下です。
+これはまた読みづらいですが、<code>Env</code>が終了時の環境で、一番右の<code>[8, 10]</code>が<code>SPrint</code>による出力結果です。
+問題ないようです。</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="o">$</span> <span class="nf">stack</span> <span class="nf">ghci</span>
+<span class="o">...</span>
+<span class="o">*</span><span class="kt">Main</span> <span class="kt">Env</span><span class="o">&gt;</span> <span class="nf">testEval</span>
+<span class="kt">Right</span> <span class="p">((</span><span class="nb">()</span><span class="p">,</span><span class="kt">Env</span> <span class="p">{</span><span class="nf">stack</span> <span class="ow">=</span> <span class="p">[</span><span class="kt">Push</span> <span class="s">&#34;a&#34;</span><span class="p">],</span> <span class="nf">env</span> <span class="ow">=</span> <span class="nf">fromList</span> <span class="p">[(</span><span class="s">&#34;a&#34;</span><span class="p">,[</span><span class="mi">8</span><span class="p">])]}),[</span><span class="mi">8</span><span class="p">,</span><span class="mi">10</span><span class="p">])</span></code></pre></div>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>今回はスコープ付き環境というデータ型を題材にLiquidHaskellを用いてみました。
+その中で、通常のHaskellでは表現できない、実装者の意図している暗黙の仕様をRefinemet Typeを用いて表現することができ、それをLiquidHaskllを用いて検証することができました。
+さらに、検証された関数を用いて簡単な言語の評価関数の実装をしてみました。
+実際に誤ったコードを書いたときに型検査に失敗するところも確認し、LiquidHaskellは確かに有用であることが分かりました。</p>
+
+<h1 id="次-々-回予告">次(々)回予告</h1>
+
+<p>先ほどのコードを読んでHaskellerの皆さんはもどかしい気持ちになったのではないでしょうか。
+もう一度<code>eval</code>の型を確認してみましょう。</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">eval</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Stm</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="nf">m</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span>
+<span class="nf">evalExp</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Exp</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="nf">m</span> <span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span></code></pre></div>
+
+<p>この型はStateモナドを用いると以下のように書き直せます。</p>
+
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">eval</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Stm</span> <span class="ow">-&gt;</span> <span class="kt">StateT</span> <span class="p">(</span><span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span> <span class="nf">m</span> <span class="nb">()</span>
+<span class="nf">evalExp</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Exp</span> <span class="ow">-&gt;</span> <span class="kt">StateT</span> <span class="p">(</span><span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span> <span class="nf">m</span> <span class="kt">Int</span></code></pre></div>
+
+<p>そのため、Stateモナドの状態に対して事前条件・事後条件を設定したくなり、これが前回の記事の冒頭で触れたHoareモナドの正体となります。
+しかしながら、前回軽く触れたようにLiquidHaskellでは量化子のない述語論理式しか書けないため、そのままではHoareモナドが実装できないのですが、LiquidHaskellの発展的な機能?である<strong>Abstract Refienement</strong>、<strong>Bounded Refinement</strong>を用いるとHoareモナドを実現できます。
+次回ではAbstract Refinement、Bounded Refinementの解説をし、次々回でHoareモナドの実装をして上のコードのリファクタリングをしていきます。
+どうぞよろしくお願いいたします。</p>
+    </article>
+
+    
+<ul class="article-share">
+  <li>
+    <a href="https://twitter.com/share" class="twitter-share-button">Tweet</a> <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+  </li>
+  <li>
+    <div class="fb-share-button" data-href="http://forestaa.github.io/blog/posts/liquidhaskell2/" data-layout="button_count" data-action="like" data-size="small" data-show-faces="true" data-share="true"></div>
+    <div id="fb-root"></div>
+    <script>(function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.10";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));</script>
+  </li>
+  <li>
+    <a href="http://b.hatena.ne.jp/entry/" class="hatena-bookmark-button" data-hatena-bookmark-layout="basic-label-counter" data-hatena-bookmark-lang="en" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+  </li>
+  <li>
+    <a data-pocket-label="pocket" data-pocket-count="horizontal" class="pocket-btn" data-lang="en"></a>
+    <script>!function(d,i){if(!d.getElementById(i)){var j=d.createElement("script");j.id=i;j.src="https://widgets.getpocket.com/v1/j/btn.js?v=1";var w=d.getElementById(i);d.body.appendChild(j);}}(document,"pocket-btn-js");</script>
+  </li>
+</ul>
+
+    <div class="disqus-comments">
+      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "forestaa-github-io" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+
+    <ul class="pager article-pager">
+      <li class="pager-newer pager-noitem">&lt; Newer</li>
+      <li class="pager-older">
+        <a href="/blog/posts/liquidhaskell1/" data-toggle="tooltip" data-placement="top" title="LiquidHaskell 入門 その1">Older &gt;</a>
+      </li>
+    </ul>
+  </div>
+
+
+<div class="site-footer">
+  <div class="copyright"></div>
+  <ul class="site-footer-items">
+  </ul>
+  <div class="powerdby">
+    Powered by <a href="https://gohugo.io/">Hugo</a> and <a href="https://github.com/taikii/whiteplain">Whiteplain</a>
+  </div>
+</div>
+
+
+</body>
+</html>
