@@ -84,7 +84,7 @@
 <ul>
 <li><a href="#スコープ付き環境">スコープ付き環境</a></li>
 <li><a href="#refinement-typeをつけてみる">Refinement Typeをつけてみる</a></li>
-<li><a href="#実践-インタプリタ">実践: インタプリタ</a></li>
+<li><a href="#実践-評価関数">実践: 評価関数</a></li>
 <li><a href="#まとめ">まとめ</a></li>
 <li><a href="#次-々-回予告">次(々)回予告</a></li>
 </ul>
@@ -162,13 +162,13 @@ Stateモナドの状態にスコープ付き環境<code>Env Int</code>を与え�
 Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</span> <span class="o">[]</span>, <span class="nv">env</span> <span class="o">=</span> fromList <span class="o">[]}</span>
 Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</span> <span class="o">[</span>Push <span class="s2">&#34;x&#34;</span><span class="o">]</span>, <span class="nv">env</span> <span class="o">=</span> fromList <span class="o">[(</span><span class="s2">&#34;x&#34;</span>,<span class="o">[</span><span class="m">10</span><span class="o">])]}</span>
 Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</span> <span class="o">[</span>Begin,Push <span class="s2">&#34;x&#34;</span><span class="o">]</span>, <span class="nv">env</span> <span class="o">=</span> fromList <span class="o">[(</span><span class="s2">&#34;x&#34;</span>,<span class="o">[</span><span class="m">10</span><span class="o">])]}</span>
-Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</span> <span class="o">[</span>Push <span class="s2">&#34;x&#34;</span>,Begin,Push <span class="s2">&#34;x&#34;</span><span class="o">]</span>, <span class="nv">env</span> <span class="o">=</span> fromList <span class="o">[(</span><span class="s2">&#34;x&#34;</span>,<span class="o">[</span><span class="m">12</span>,10<span class="o">])]}</span>
+Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</span> <span class="o">[</span>Push <span class="s2">&#34;x&#34;</span>,Begin,Push <span class="s2">&#34;x&#34;</span><span class="o">]</span>, <span class="nv">env</span> <span class="o">=</span> fromList <span class="o">[(</span><span class="s2">&#34;x&#34;</span>,<span class="o">[</span><span class="m">12</span>, <span class="m">10</span><span class="o">])]}</span>
 Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</span> <span class="o">[</span>Push <span class="s2">&#34;x&#34;</span><span class="o">]</span>, <span class="nv">env</span> <span class="o">=</span> fromList <span class="o">[(</span><span class="s2">&#34;x&#34;</span>,<span class="o">[</span><span class="m">10</span><span class="o">])]}</span></code></pre></div></p>
 
 <h1 id="refinement-typeをつけてみる">Refinement Typeをつけてみる</h1>
 
 <p>ところで先ほどのコードをコンパイルすると以下の警告が出ます。
-警告は<code>Wincomplete-patterns</code>ですが、<code>lookup</code>に対しては<code>id</code>に束縛されたリストが空の場合、<code>endScope</code>に対してはスタックが空の場合のパターンが足りていないようです。
+警告は<code>Wincomplete-patterns</code>で、<code>lookup</code>に対しては<code>id</code>に束縛されたリストが空の場合、<code>endScope</code>に対してはスタックが空の場合のパターンが足りていないようです。
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">/src/Env.hs:6:1: warning: <span class="o">[</span>-Wincomplete-patterns<span class="o">]</span>
     Pattern match<span class="o">(</span>es<span class="o">)</span> are non-exhaustive
     In a <span class="k">case</span> alternative: Patterns not matched: <span class="o">(</span>Just <span class="o">[])</span>
@@ -181,7 +181,8 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
     In an equation <span class="k">for</span> endScope: Patterns not matched: <span class="o">(</span>Env <span class="o">[]</span> _<span class="o">)</span>
    <span class="p">|</span>
 <span class="m">19</span> <span class="p">|</span> endScope <span class="o">(</span>Env <span class="o">(</span>Push id : rest<span class="o">)</span> e<span class="o">)</span>  <span class="o">=</span> endScope $ Env rest <span class="o">(</span>Map.update pop id e<span class="o">)</span>
-   <span class="p">|</span> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...</code></pre></div></p>
+   <span class="p">|</span> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...</code></pre></div></p>
 
 <p>従って、これらの関数はMaybeモナドやEitherモナドに包んでエラーを表現するのがお行儀がよいです。
 しかしながら、これらは呼び出すときに以下のルールを定めることで、実際にはそのパターンにマッチすることはなく、問題にならないことが分かります。</p>
@@ -192,7 +193,7 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
 </ol>
 
 <p>1は<code>endScope</code>内で定義されている<code>pop</code>関数によって既に実現されています。
-リストが空になる時は環境から削除されます。
+リストが空になる時は環境から削除されるため、パターンマッチの時にリストが空になることはありません。
 2は、例えば言語処理系などでこれを用いる場合、構文解析の時点で<code>{}</code>の数が合っていることが保証されていることが多いため妥当な仮定と言えるでしょう。
 余計なモナドで包むことを避けるために、これらのルールをLiquid Haskellを用いて型で表現してみます。</p>
 
@@ -224,7 +225,6 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
 
 <p>これらを用いて先ほど定義した関数にさらに細かい型を与えてみます。
 <code>empty</code>はスコープが0の<code>Env</code>を返す、<code>insert</code>はスコープの大きさを変えない、といったような型を与えることができました。
-<code>lookup</code>には特に新しい型は与えません。
 <code>beginScope</code>はスコープの深さを1増やす、<code>endScope</code>はスコープが空でない<code>Env</code>を受け取ってスコープの深さを1減らす、といったような型を与えることができます。
 <code>endScope</code>には無限ループしないことを示すためにメトリックを与えています。
 スタックの長さは単調減少するので、無限ループしないことを示すためにはメトリックとしてスタックの長さ<code>[len (stack e)]</code>を与えてあげれば十分です。
@@ -257,14 +257,13 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
 <p>これで先ほどの1,2のルールを表現することができました。
 実際にLiquidHaskellでコンパイルしてみましょう。
 今回は<code>ScopeOp</code>でバリアント型を用いたため、オプション<code>--exactdc</code>を使う必要があります。
-詳しくは<a href="https://github.com/ucsd-progsys/liquidhaskell/issues/1284">こちらのissue</a>をご覧ください。
 ファイルの先頭に<code>{-@ LIQUID &quot;--exactdc&quot; @-}</code>を記述してもokです。
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ stack <span class="nb">exec</span> -- liquid src/Env.hs --exactdc
 ...
 **** RESULT: SAFE **************************************************************</code></pre></div>
 問題なさそうです。</p>
 
-<h1 id="実践-インタプリタ">実践: インタプリタ</h1>
+<h1 id="実践-評価関数">実践: 評価関数</h1>
 
 <p>それでは先ほど作ったスコープ付き環境を用いて簡単な評価関数<code>eval</code>を実装してみます。
 対象とする言語は、Tiger本で扱われていたプログラミング言語Linearの算術式を制限したもので、構文は以下です。
@@ -319,7 +318,7 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
   <span class="nf">return</span> <span class="p">(</span><span class="nf">v</span><span class="p">,</span> <span class="nf">env4</span><span class="p">)</span></code></pre></div></p>
 
 <p>ここで重要なのは、<code>evalExp</code>内の<code>EScope</code>のパターンマッチの部分です。
-ちゃんと<code>beginScope</code>と<code>endScope</code>で挟んであります。
+<code>beginScope</code>と<code>endScope</code>で挟んであります。
 例えば、ここのうち<code>endScope</code>をコメントアウトすると、以下のようにちゃんとエラーを報告してくれます。</p>
 
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ stack <span class="nb">exec</span> -- liquid src/Liquid/Env.hs
@@ -345,7 +344,7 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
    In Context
      env0 : <span class="o">{</span>env0 : <span class="o">(</span>Liquid.Env.Env GHC.Types.Int<span class="o">)</span> <span class="p">|</span> Liquid.Env.scopeNum env0 &gt;<span class="o">=</span> <span class="m">0</span><span class="o">}</span></code></pre></div>
 
-<p>それでは各自LiquidHaskellでコンパイルしたうえで、正しく動いているかテストしてみましょう。
+<p>それではLiquidHaskellでコンパイルしたうえで、正しく動いているかテストしてみましょう。
 以下のテスト関数を用意してください。
 読みにくいですが、<code>a := 5 + 3; print [a, {a := 10, a}]</code>のようなプログラムをテストをしています。
 <div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">run</span> <span class="ow">::</span> <span class="kt">Stm</span> <span class="ow">-&gt;</span> <span class="kt">Either</span> <span class="kt">EvalException</span> <span class="p">((</span><span class="nb">()</span><span class="p">,</span> <span class="kt">Env</span> <span class="kt">Int</span><span class="p">),</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span>
@@ -388,10 +387,11 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
 <div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">eval</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Stm</span> <span class="ow">-&gt;</span> <span class="kt">StateT</span> <span class="p">(</span><span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span> <span class="nf">m</span> <span class="nb">()</span>
 <span class="nf">evalExp</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Exp</span> <span class="ow">-&gt;</span> <span class="kt">StateT</span> <span class="p">(</span><span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span> <span class="nf">m</span> <span class="kt">Int</span></code></pre></div>
 
-<p>そのため、Stateモナドの状態に対して事前条件・事後条件を設定したくなり、これが前回の記事の冒頭で触れたHoareモナドの正体となります。
-しかしながら、前回軽く触れたようにLiquidHaskellでは量化子のない述語論理式しか書けないため、そのままではHoareモナドが実装できないのですが、LiquidHaskellの発展的な機能?である<strong>Abstract Refienement</strong>、<strong>Bounded Refinement</strong>を用いるとHoareモナドを実現できます。
-次回ではAbstract Refinement、Bounded Refinementの解説をし、次々回でHoareモナドの実装をして上のコードのリファクタリングをしていきます。
-どうぞよろしくお願いいたします。</p>
+<p>そのため、Stateモナドの状態に対して事前条件・事後条件を設定したくなります。
+そしてこれが前回の記事の冒頭で触れたHoareモナドの正体となります。
+しかしながら、前回軽く触れたようにLiquidHaskellでは量化子のない述語論理式しか書けないため、そのままではHoareモナドが実装できません。
+ここでLiquidHaskellの発展的?な機能である<strong>Abstract Refienement</strong>、<strong>Bounded Refinement</strong>を用いてHoareモナドを実装してみます。
+次回はAbstract Refinement、Bounded Refinementの解説をし、次々回でHoareモナドの実装をして上のコードを書き直してみます。</p>
     </article>
 
     
