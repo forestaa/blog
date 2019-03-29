@@ -1,7 +1,7 @@
-/* Background */ .highlight .chroma { color: #f8f8f2; background-color: #272822; padding: 5px; }
-/* Error */ .highlight .chroma .err { color: #960050; background-color: #1e0010; padding: 5px; }
+/* Background */ .highlight .chroma { color: #f8f8f2; background-color: #272822; padding: 0px 5px; overflow: auto; }
+/* Error */ .highlight .chroma .err { color: #960050; background-color: #1e0010; padding: 0px 5px; overflow: auto; }
 /* LineTableTD */ .highlight .chroma .lntd { vertical-align: top; padding: 0; margin: 0; border: 0; }
-/* LineTable */ .highlight .chroma .lntable { border-spacing: 0; padding: 0; margin: 0; border: 0; width: 100%; overflow: auto; display: block; }
+/* LineTable */ .highlight .chroma .lntable { border-spacing: 0; padding: 0; margin: 0; border: 0; width: 100%; display: block; }
 /* LineHighlight */ .highlight .chroma .hl { background-color: #ffffcc; display: block; width: 100% }
 /* LineNumbersTable */ .highlight .chroma .lnt { margin-right: 0.4em; padding: 0 0.4em 0 0.4em; display: block; }
 /* LineNumbers */ .highlight .chroma .ln { margin-right: 0.4em; padding: 0 0.4em 0 0.4em; }
