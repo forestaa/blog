@@ -9,7 +9,6 @@
       "request": "launch",
       "name": "Launch Chrome against localhost",
       "url": "http://localhost:1313/blog/",
-      "preLaunchTask": "launch",
       "webRoot": "${workspaceFolder}"
     }
   ]
