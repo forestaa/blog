@@ -72,7 +72,7 @@ $ stack exec -- liquid src/Liquid/AbstractRefinement.hs
 
 **** RESULT: SAFE **************************************************************
 {{< /highlight >}}
-データ型の宣言にもAbstract Refinementが使えます。以下では```List```型の宣言にAbstract Refinementを用いた例です。(論文: [Abstract Refinement Types](https://ranjitjhala.github.io/static/abstract_refinement_types.pdf)を参考にしました。)
+データ型の宣言にもAbstract Refinementが使えます。以下では```List```型の宣言にAbstract Refinementを用いた例です。
 テストでは述語としてすべての値が等しいというものを与えているので、```testListUnSafe```のみエラーを報告されています。
 {{< highlight Haskell >}}
 {-@ 
