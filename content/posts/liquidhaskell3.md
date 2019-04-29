@@ -1,18 +1,18 @@
 ---
 title: "LiquidHaskell 入門 その3"
-date: 2019-03-29T16:27:53+09:00
+date: 2019-04-29T16:27:53+09:00
 draft: true
 tags: ["Haskell", "形式検証"]
 ---
 
-[前回の記事](https://forestaa.github.io/blog/posts/liquidhaskell2/)ではLiquidHaskellを用いて簡単な言語の評価機を作ってみました。
+[前回の記事]({{< relref "liquidhaskell2" >}})ではLiquidHaskellを用いて簡単な言語の評価機を作ってみました。
 今回はそれをStateモナドを用いて書き直すために必要な新しい機能である**Abstarct Refinement**, **Bounded Refinmenet**の解説をしていきたいと思います。
 
 <!--more-->
 
 # Abstract Refinement
-[LiquidHaskell入門その1](https://forestaa.github.io/blog/posts/liquidhaskell1/)で述べたように、LiquidHaskellでは量化子のない一階述語論理式を書くことができますが、それだけでは表現力が足りないケースが出てきます。
-[LiquidHaskellのブログ](https://ucsd-progsys.github.io/liquidhaskell-blog/2013/06/03/abstracting-over-refinements.lhs/)にある例を引っ張ってみます。
+[LiquidHaskell入門その1]({{< relref "liquidhaskell1" >}})で述べたように、LiquidHaskellでは量化子のない一階述語論理式を書くことができますが、それだけでは表現力が足りないケースが出てきます。
+[公式ブログ](https://ucsd-progsys.github.io/liquidhaskell-blog/2013/06/03/abstracting-over-refinements.lhs/)にある例を引っ張ってみます。
 次の関数```maxInt```を考えてみます。
 {{< highlight Haskell >}}
 maxInt :: Int -> Int -> Int
@@ -115,7 +115,7 @@ $ stack exec -- liquid src/Liquid/AbstractRefinement.hs
 {{< /highlight >}}
 
 # Bounded Refinement
-有界量化や型クラスのように、全称量化を得たらそのドメインを制限するような仕組みが欲しくなります。
+有界量化や型クラスのように、全称量化を得たらそのドメインを制限して情報量を増やすような仕組みが欲しくなります。
 述語に対する全称量化であったAbstract Refinementに対し、そのドメインを制限するのがBounded Refinementです。
 早速具体例を見ていきましょう。
 関数合成```(.)```は以下のように書けます。
@@ -158,12 +158,11 @@ $ stack exec -- liquid src/Liquid/AbstractRefinement.hs
 * 全称量化された述語の具体するときの構文についてはまとまった情報がありません。(Parserを読む気にはなりませんでした。)
 [公式レポジトリのテスト](https://github.com/ucsd-progsys/liquidhaskell/tree/develop/tests)を読むなりして適当に推測しましょう。
 今回の記事と次回の記事でもいくつか例を出していきます。
-* Bounded Refinement周りの構文についてもまとまった情報がありません。これも次回の記事でなるべく具体例を出してフォローしていくつもりです。
+* Bounded Refinement周りの構文についてもまとまった情報がありません。これも次回の記事でいくつか具体例を出してフォローしていくつもりです。
 
 # まとめ
 今回はAbstract RefinementとBounded Refinementについて解説しました。
-LiquidHaskellでは量化子のない一階述語論理式しか書けませんが、Abstract Refinementは述語の量化、Bounded Refinementは量化した述語の制限を提供します。
+LiquidHaskellでは量化子のない一階述語論理式しか書けませんが、Abstract Refinementは述語の全称量化、Bounded Refinementは述語の有界量化を提供します。
 これらによってLiquidHaskellで表現できる条件の幅が広がることを確認しました。
 
-次回はこれらを用いてHoareモナドを実装し、前回の評価機をHoareモナドを用いて書き直します。
-今回の具体例が足りていない分を次回で多少補います。
+[次回]({{< relref "liquidhaskell4" >}})はこれらを用いてHoareモナドを実装し、前回の評価機をHoareモナドを用いてよりHaskellらしいコードに書き直します。

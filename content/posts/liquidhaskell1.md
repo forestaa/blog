@@ -294,7 +294,7 @@ p ::= true
 - 依存関数型も書ける・停止性の検査も可能
 - 言語を決定可能な範囲にしているため、自動検証が可能で基本的に証明を書く必要がない。
 
-[次回](https://forestaa.github.io/blog/posts/liquidhaskell2/)は今回説明したことを用いて、スコープを持つ簡単な言語の評価関数を作ってみたいと思います。
+[次回]({{< relref "liquidhaskell2" >}})は今回説明したことを用いて、スコープを持つ簡単な言語の評価関数を作ってみたいと思います。
 
 # (追記) 参考資料
 - [公式レポジトリ](https://github.com/ucsd-progsys/liquidhaskell)

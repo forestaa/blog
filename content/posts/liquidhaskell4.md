@@ -1,13 +1,12 @@
 ---
 title: "LiquidHaskell 入門 その4"
-date: 2019-03-15T11:51:36+09:00
+date: 2019-04-29T17:51:36+09:00
 draft: true
 tags: ["Haskell", "形式検証"]
 ---
 
-<!-- [前回](https://forestaa.github.io/blog/posts/liquidhaskell3/)はLiquidHaskellの表現力を高める機能であるAbstract RefinementとBounded Refinementの解説をしました。 -->
 
-[前回]({{< relref "liquidhaskell3" >}})はLiquidHaskellの表現力を高める機能であるAbstract RefinementとBounded Refinementの解説をしました。
+[前回の記事]({{< relref "liquidhaskell3" >}})はLiquidHaskellの表現力を高める機能であるAbstract RefinementとBounded Refinementの解説をしました。
 今回は[前々回]({{< relref "liquidhaskell2" >}})のナイーブなコードを**Hoareモナド**を用いてHaskellらしいコードに書き直してみます。
 Abstract RefinementとBounded Refinementをガンガン使っていきます。
 <!--more-->
@@ -16,7 +15,7 @@ Abstract RefinementとBounded Refinementをガンガン使っていきます。
 LiquidHaskellによってスコープ付き環境とそれらの関数に対してより細かい型をつけ、実際に誤った使い方をしたときに型検査に失敗するところまで確認しました。
 LiquidHaskellは確かに有用であることが分かりました。
 しかし、[前々回]({{< relref "liquidhaskell2" >}})のコードを見たHaskellerのみなさんはもどかしい気持ちになったのではないでしょうか。
-evalの型をもう一度見直してみましょう。
+```eval```の型をもう一度見直してみましょう。
 {{< highlight Haskell >}}
 eval :: (MonadWriter [Int] m, MonadError EvalException m) => Stm -> Env Int -> m ((), Env Int)
 evalExp :: (MonadWriter [Int] m, MonadError EvalException m) => Exp -> Env Int -> m (Int, Env Int)
@@ -27,8 +26,8 @@ eval :: (MonadWriter [Int] m, MonadError EvalException m) => Stm -> StateT (Env 
 evalExp :: (MonadWriter [Int] m, MonadError EvalException m) => Exp -> StateT (Env Int) m Int
 {{< /highlight>}}
 しかしながらそのままStateモナドを用いると、状態の事前条件と事後条件について何も言えません。
-実際にendScopeを呼んでみると、型検査に失敗します。
-endScopeを呼ぶための事前条件を状態が満たしていることを保証できないためです。
+実際に```endScope```を呼んでみると、型検査に失敗します。
+```endScope```を呼ぶための事前条件を状態が満たしていることを保証できないためです。
 {{< highlight Haskell >}}
 eval' :: (MonadWriter [Int] m, MonadError EvalException m) => Stm -> StateT (Env Int) m ()
 ...
@@ -62,7 +61,7 @@ $ stack exec -- liquid src/Liquid/Env.hs
 {{< /highlight >}}
 
 # Hoareモナド
-Stateモナドに事前条件と事後条件をつけたようなものはNanevskiらのHoareモナドとして知られています。
+Stateモナドに事前条件と事後条件をつけたようなものはNanevskiらの**Hoareモナド**として知られています。
 詳しくはAleksandar Nanevski, Greg Morrisett and Lars Birkedal. Hoare Type Thoery, Polymorphism and Separation. JFP 2007.を参照してください。
 LiquidHaskell上で実装すると以下のようになります。
 前回解説したAbstract Refinementを用いています。
@@ -76,7 +75,7 @@ data Hoare s a = Hoare (s -> (a, s))
 {{< /highlight >}}
 Stateモナド周りの関数に対するRefinement Typeは以下のようになります。
 ```runHoare```はStateモナドの中身を抽出、```put```は状態を引数と同じにする、```get```は状態をそのままに状態を返すという条件を表しています。
-```modify```は状態に対して引数```f```を適用し、事前条件・事後条件を```f```のものにするという条件を表しています。
+```modify```は状態に対して引数```f```を適用し、事前条件・事後条件を```f```と同じものにするという条件を表しています。
 ```return```は状態を変更せず、返り値を引数にするという条件を表しています。
 ```(>>=)```は少し大変です。
 ```p :: s -> Bool```、```q :: a -> s -> s -> Bool```は通常のHoareモナドのパラメータです。
@@ -245,5 +244,5 @@ HoareモナドはStateモナドの状態に対して事前・事後条件を追�
 また、前回説明したAbstract, Bounded Refinementをふんだんに使うことで、それらの具体例を補いました。
 
 当初の予定通り、Hoareモナドまで終わったので、今回で僕のLiquidHaskell入門を終わりにしたいと思います。
-ここまで見ていただいた方はありがとうございました。
+ここまで見ていただきありがとうございました。
 

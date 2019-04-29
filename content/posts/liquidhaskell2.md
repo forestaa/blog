@@ -5,7 +5,7 @@ draft: false
 tags: ["Haskell", "形式検証"]
 ---
 
-[前回の記事](https://forestaa.github.io/blog/posts/liquidhaskell1/)ではLiquidHaskellの基礎を学びました。
+[前回の記事]({{< relref "liquidhaskell1" >}})ではLiquidHaskellの基礎を学びました。
 今回はLiquidHaskellを用いて、とあるデータ型に対して、通常のHaskellの型の上に、実装者の暗黙の意図を反映したより細かい型をつけてみたいと思います。
 <!--more-->
 
@@ -19,13 +19,11 @@ tags: ["Haskell", "形式検証"]
 このデータ型をここではスコープ付き環境と呼ぶことにします。
 スコープ付き環境はスコープの概念のあるプログラミング言語のインタプリタでの変数の環境や、型検査時の型環境を表すことが可能です。
 Tiger本ではTiger言語の型検査器の実装等に実際に用いられていました。
-
 {{< highlight Haskell >}}
 type Id = String
 data ScopeOp = Begin | Push Id deriving (Eq, Show)
 data Env a = Env { stack :: [ScopeOp], env :: Map.Map Id [a] } deriving (Eq, Show)
 {{< /highlight >}}
-
 このデータ構造を操作する関数として以下のようなものがあります。
 ```empty, insert, lookup```は通常のマップと同様な関数です。
 ただし、```insert```時にはスタックに```Push id```を積むことで、このスコープ内で```id```に値が束縛されたということを記録します。
@@ -58,7 +56,6 @@ endScope (Env (Push id : rest) e) = endScope $ Env rest (Map.update pop id e)
     pop (_:as) = Just as
 endScope (Env (Begin : rest) e) = Env rest e
 {{< /highlight >}}
-
 実際に使ってみましょう。
 以下のテストコードを走らせます。
 Stateモナドの状態にスコープ付き環境```Env Int```を与えています。
@@ -73,7 +70,6 @@ testEnv = flip evalStateT empty $ do
   where
     printState = get >>= lift . print
 {{< /highlight >}}
-
 結果は以下のようになります。
 スコープから出るとスコープ内で挿入した```x = 12```が解放されていることが分かります。
 また、スタックに行った操作が記録され、```endScope```が呼ばれると```Begin```まで解放されていることも分かります。
@@ -87,7 +83,6 @@ Env {stack = [Begin,Push "x"], env = fromList [("x",[10])]}
 Env {stack = [Push "x",Begin,Push "x"], env = fromList [("x",[12, 10])]}
 Env {stack = [Push "x"], env = fromList [("x",[10])]}
 {{< /highlight >}}
-
 
 # Refinement Typeをつけてみる
 ところで先ほどのコードをコンパイルすると以下の警告が出ます。
@@ -108,7 +103,6 @@ Env {stack = [Push "x"], env = fromList [("x",[10])]}
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 ...
 {{< /highlight >}}
-
 従って、これらの関数はMaybeモナドやEitherモナドに包んでエラーを表現するのがお行儀がよいです。
 しかしながら、これらは呼び出すときに以下のルールを定めることで、実際にはそのパターンにマッチすることはなく、問題にならないことが分かります。
 
@@ -125,7 +119,6 @@ Env {stack = [Push "x"], env = fromList [("x",[10])]}
 {-@ data Env a = Env { stack :: [ScopeOp], env :: (Map Id { v: [a] | len v > 0 })} @-}
 data Env a = Env { stack :: [ScopeOp], env :: Map.Map Id [a]} deriving (Eq, Show)
 {{< /highlight >}}
-
 2を型で表現するためには、```Env```のスコープ数を表現することができるときれいに型がつきそうです。
 そこで、以下の補助関数を定義します。
 ```beginNum```はスタック内の```Begin```の数、つまり現在のスコープの深さを計算します。
@@ -149,7 +142,6 @@ scopeNum (Env s _) = beginNum s
 {-@ type EnvN a N = {e: Env a | scopeNum e = N} @-}
 {-@ type EnvX a E = {e: Env a | scopeNum e = scopeNum E} @-}
 {{< /highlight >}}
-
 これらを用いて先ほど定義した関数にさらに細かい型を与えてみます。
 ```empty```はスコープが0の```Env```を返す、```insert```はスコープの大きさを変えない、といったような型を与えることができました。
 ```beginScope```はスコープの深さを1増やす、```endScope```はスコープが空でない```Env```を受け取ってスコープの深さを1減らす、といったような型を与えることができます。
@@ -182,7 +174,6 @@ endScope (Env (Push id : rest) e) = endScope $ Env rest (Map.update pop id e)
     pop (_:as) = Just as
 endScope (Env (Begin : rest) e) = Env rest e
 {{< /highlight >}}
-
 これで先ほどの1,2のルールを表現することができました。
 実際にLiquidHaskellでコンパイルしてみましょう。
 今回は```ScopeOp```でバリアント型を用いたため、オプション```--exactdc```を使う必要があります。
@@ -208,7 +199,6 @@ data Exp = EVar Id
          | EPlus Exp Exp
          | EScope Stm Exp
 {{< /highlight >}}
-
 これの```eval```を実装したものが以下です。
 ```SPrint```はによる副作用はIOモナドでもよいのですが、MonadWriterで代用します。
 未定義変数へのアクセスが起こりうるので、MonadErrorを与えます。
@@ -250,12 +240,9 @@ evalExp (EScope s e) env0 = do
   let env4 = endScope env3
   return (v, env4)
 {{< /highlight >}}
-
-
 ここで重要なのは、```evalExp```内の```EScope```のパターンマッチの部分です。
 ```beginScope```と```endScope```で挟んであります。
 例えば、ここのうち```endScope```をコメントアウトすると、以下のようにちゃんとエラーを報告してくれます。
-
 {{< highlight bash >}}
 $ stack exec -- liquid src/Liquid/Env.hs
 ...
@@ -280,7 +267,6 @@ $ stack exec -- liquid src/Liquid/Env.hs
    In Context
      env0 : {env0 : (Liquid.Env.Env GHC.Types.Int) | Liquid.Env.scopeNum env0 >= 0}
 {{< /highlight>}}
-
 それではLiquidHaskellでコンパイルしたうえで、正しく動いているかテストしてみましょう。
 以下のテスト関数を用意してください。
 読みにくいですが、```a := 5 + 3; print [a, {a := 10, a}]```のようなプログラムをテストをしています。
@@ -297,11 +283,9 @@ testEval = print $ run s
                         EScope ("a" `SAssign` EInt 10) (EVar "a")] 
 
 {{< /highlight >}}
-
 実行結果は以下です。
 これはまた読みづらいですが、```Env```が終了時の環境で、一番右の```[8, 10]```が```SPrint```による出力結果です。
 問題ないようです。
-
 {{< highlight Haskell >}}
 $ stack ghci
 ...
@@ -318,21 +302,17 @@ Right (((),Env {stack = [Push "a"], env = fromList [("a",[8])]}),[8,10])
 # 次(々)回予告
 先ほどのコードを読んでHaskellerの皆さんはもどかしい気持ちになったのではないでしょうか。
 もう一度```eval```の型を確認してみましょう。
-
 {{< highlight Haskell >}}
 eval :: (MonadWriter [Int] m, MonadError EvalException m) => Stm -> Env Int -> m ((), Env Int)
 evalExp :: (MonadWriter [Int] m, MonadError EvalException m) => Exp -> Env Int -> m (Int, Env Int)
 {{< /highlight>}}
-
 この型はStateモナドを用いると以下のように書き直せます。
-
 {{< highlight Haskell >}}
 eval :: (MonadWriter [Int] m, MonadError EvalException m) => Stm -> StateT (Env Int) m ()
 evalExp :: (MonadWriter [Int] m, MonadError EvalException m) => Exp -> StateT (Env Int) m Int
 {{< /highlight>}}
-
 そのため、Stateモナドの状態に対して事前条件・事後条件を設定したくなります。
-そしてこれが前回の記事の冒頭で触れたHoareモナドの正体となります。
+そしてこれが[前回の記事]({{< relref "liquidhaskell1" >}})の冒頭で触れたHoareモナドの正体となります。
 しかしながら、前回軽く触れたようにLiquidHaskellでは量化子のない述語論理式しか書けないため、そのままではHoareモナドが実装できません。
 ここでLiquidHaskellの発展的?な機能である**Abstract Refienement**、**Bounded Refinement**を用いてHoareモナドを実装してみます。
-次回はAbstract Refinement、Bounded Refinementの解説をし、次々回でHoareモナドの実装をして上のコードを書き直してみます。
+[次回]({{< relref "liquidhaskell3" >}})はAbstract Refinement、Bounded Refinementの解説をし、[次々回]({{< relref "liquidhaskell4" >}})でHoareモナドの実装をして上のコードを書き直してみます。
