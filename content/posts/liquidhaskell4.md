@@ -5,29 +5,28 @@ draft: true
 tags: ["Haskell", "形式検証"]
 ---
 
-前回はLiquidHaskellを実際に使ってみました。
-今回は前回のナイーブなコードの状態モナドを用いたリファクタリングを通して、LiquidHaskellの限界を見ていきたいと思います。
+<!-- [前回](https://forestaa.github.io/blog/posts/liquidhaskell3/)はLiquidHaskellの表現力を高める機能であるAbstract RefinementとBounded Refinementの解説をしました。 -->
+
+[前回]({{< relref "liquidhaskell3" >}})はLiquidHaskellの表現力を高める機能であるAbstract RefinementとBounded Refinementの解説をしました。
+今回は[前々回]({{< relref "liquidhaskell2" >}})のナイーブなコードを**Hoareモナド**を用いてHaskellらしいコードに書き直してみます。
+Abstract RefinementとBounded Refinementをガンガン使っていきます。
 <!--more-->
 
 # LiquidHaskellとStateモナド
 LiquidHaskellによってスコープ付き環境とそれらの関数に対してより細かい型をつけ、実際に誤った使い方をしたときに型検査に失敗するところまで確認しました。
 LiquidHaskellは確かに有用であることが分かりました。
-しかし、前回のコードを見たHaskellerのみなさんはもどかしい気持ちになったのではないでしょうか。
+しかし、[前々回]({{< relref "liquidhaskell2" >}})のコードを見たHaskellerのみなさんはもどかしい気持ちになったのではないでしょうか。
 evalの型をもう一度見直してみましょう。
-
 {{< highlight Haskell >}}
 eval :: (MonadWriter [Int] m, MonadError EvalException m) => Stm -> Env Int -> m ((), Env Int)
 evalExp :: (MonadWriter [Int] m, MonadError EvalException m) => Exp -> Env Int -> m (Int, Env Int)
 {{< /highlight>}}
-
-この型は状態モナドですので、本来なら以下のように書きたいです。
-
+この型はStateモナドですので、本来なら以下のように書きたいです。
 {{< highlight Haskell >}}
 eval :: (MonadWriter [Int] m, MonadError EvalException m) => Stm -> StateT (Env Int) m ()
 evalExp :: (MonadWriter [Int] m, MonadError EvalException m) => Exp -> StateT (Env Int) m Int
 {{< /highlight>}}
-
-しかしながらそのまま状態モナドを用いると、状態の事前条件と事後条件について何も言えません。
+しかしながらそのままStateモナドを用いると、状態の事前条件と事後条件について何も言えません。
 実際にendScopeを呼んでみると、型検査に失敗します。
 endScopeを呼ぶための事前条件を状態が満たしていることを保証できないためです。
 {{< highlight Haskell >}}
@@ -43,7 +42,6 @@ evalExp' (EScope s e) = do
   modify endScope
   return v
 {{< /highlight>}}
-
 {{< highlight bash >}}
 $ stack exec -- liquid src/Liquid/Env.hs
 ...
@@ -64,8 +62,138 @@ $ stack exec -- liquid src/Liquid/Env.hs
 {{< /highlight >}}
 
 # Hoareモナド
-状態モナドに事前条件と事後条件をつけたようなものはNanevskiらのHoareモナドとして知られています。
+Stateモナドに事前条件と事後条件をつけたようなものはNanevskiらのHoareモナドとして知られています。
 詳しくはAleksandar Nanevski, Greg Morrisett and Lars Birkedal. Hoare Type Thoery, Polymorphism and Separation. JFP 2007.を参照してください。
+LiquidHaskell上で実装すると以下のようになります。
+前回解説したAbstract Refinementを用いています。
+通常のStateモナドに2つの述語パラメータ```p :: s -> Bool```、```q :: a -> s -> s -> Bool```を加えています。
+```p :: s -> Bool```が状態の事前条件、```q :: a -> s -> s -> Bool```が事後条件を指定しています。
+事後の状態```s<q x v>```は事前の状態```v: s<p>```と返り値```x::a```に依存しているため、事前の状態に対する相対的な条件も指定することが可能です。
+例えば、```v' = v + 1```みたいな条件を書くことができます。
+{{< highlight Haskell >}}
+{-@ data Hoare s a <p :: s -> Bool, q :: a -> s -> s -> Bool> = Hoare (v: s<p> -> (x::a, s<q x v>)) @-}
+data Hoare s a = Hoare (s -> (a, s))
+{{< /highlight >}}
+Stateモナド周りの関数に対するRefinement Typeは以下のようになります。
+```runHoare```はStateモナドの中身を抽出、```put```は状態を引数と同じにする、```get```は状態をそのままに状態を返すという条件を表しています。
+```modify```は状態に対して引数```f```を適用し、事前条件・事後条件を```f```のものにするという条件を表しています。
+```return```は状態を変更せず、返り値を引数にするという条件を表しています。
+```(>>=)```は少し大変です。
+```p :: s -> Bool```、```q :: a -> s -> s -> Bool```は通常のHoareモナドのパラメータです。
+```pp :: a -> s -> Bool```は第二引数の事前条件に関するパラメータなのですが、第一引数の返り値に依存することができます。
+```qq :: b -> s -> s -> Bool```は通常の事後条件に関するパラメータです。
+また、Bounded Refinementを用いて述語パラメータに制限を加えています。
+Bounded Refinementの制約は2つ以上書くことができます。
+1つ目の制約は第一引数の事後条件が第二引数の事前条件を満たすことを表しています。
+2つ目の制約は第二引数の事後条件が最終的な事後条件を満たすことを表しています。
+{{< highlight Haskell >}}
+{-@ runHoare :: forall <p :: s -> Bool, q :: a -> s -> s -> Bool>. Hoare <p, q> s a -> v:s<p> -> (x::a, s<q x v>) @-}
+runHoare :: Hoare s a -> s -> (a, s)
+runHoare (Hoare f) = f
+
+{-@ put :: forall <p :: s -> Bool>. v:s -> Hoare <p, {\x s t -> v == t}> s () @-}
+put :: s -> Hoare s ()
+put s = Hoare (const ((), s))
+
+{-@ get :: forall <p :: s -> Bool>. Hoare <p, {\x s t -> x == t && s == t}> s s @-}
+get :: Hoare s s
+get = Hoare (\s -> (s, s))
+
+{-@ modify :: forall <p :: s -> Bool
+                    , q :: s -> s -> Bool>. 
+                 (x: s<p> -> {v: s<q x> | true }) 
+              -> Hoare <p, \_ t -> { v: s<q t> | true }> s () @-}
+modify :: (s -> s) -> Hoare s ()
+modify f = Hoare (\s -> ((), f s))
+
+{-@ return :: forall <p :: s -> Bool>. y:a -> Hoare <p, {\x s t -> x == y && s == t}> s a @-}
+return :: a -> Hoare s a
+return a = Hoare (\s -> (a, s))
+
+{-@ 
+(>>=) :: forall < p  :: s -> Bool
+                , q  :: a -> s -> s -> Bool
+                , pp :: a -> s -> Bool
+                , qq :: b -> s -> s -> Bool
+                , r  :: b -> s -> s -> Bool>. 
+            {x::a, ss::s<p> |- s<q x ss> <: s<pp x>}
+            {x::a, y::b, ss::s<p>, sss::s<q x ss> |- s<qq y sss> <: s<r y ss>}
+            Hoare <p, q> s a
+         -> (x:a -> Hoare <{ v: s<pp x> | true }, qq> s b)
+         -> Hoare <p, r> s b
+@-}
+(>>=) :: Hoare s a -> (a -> Hoare s b) -> Hoare s b
+m >>= k = Hoare (\s -> let (a, s') = runHoare m s in runHoare (k a) s')
+{{< /highlight >}}
+
+# evalのHoareモナドを用いたリファクタリング
+それでは[第二回]({{< relref "liquidhaskell2" >}})の```eval```をHoareモナドを用いて書き直していきます。
+monad transformerには適用ができなかったため、```SPrint```を削ったり、未定義の変数に対しては```undefined```を返してサボっています。
+現状型クラスへの抽象化とも相性が悪いみたいです。
+Monad型クラスのインスタンスにしてdo構文を使うと、せっかく定義したRefinement Typeを使えなくなってしまいます。(おそらくMonad型クラスの```(>>=)```のRefinement Typeを参照してしまっているためです。)
+いくつかの難点はあるものの、Hoareモナドによって状態を隠ぺいしたコードに書き直すことに成功しました。
+{{< highlight Haskell >}}
+data Stm = SSeq Stm Stm
+         | SAssign Id Exp
+data Exp = EVar Id
+         | EInt Int
+         | EPlus Exp Exp
+         | EScope Stm Exp
+
+{-@ lazy eval @-}
+{-@ eval :: forall <p :: Env Int -> Bool>. Stm -> Hoare <p, {\_ e0 e1 -> scopeNum e0 == scopeNum e1}> (Env Int) ()  @-}
+eval :: Stm -> Hoare (Env Int) ()
+eval (s1 `SSeq` s2) = eval s1 >>= \_ -> eval s2
+eval (x `SAssign` e) =
+  evalExp e >>= \v ->
+  modify (insert x v)
+
+{-@ evalExp :: forall <p :: Env Int -> Bool>. Exp -> Hoare <p, {\_ e0 e1 -> scopeNum e0 == scopeNum e1}> (Env Int) Int @-}
+evalExp :: Exp -> Hoare (Env Int) Int
+evalExp (EVar x) =
+  get >>= \e ->
+  case lookup x e of
+    Just v -> return v
+    Nothing -> undefined
+evalExp (EInt n) = return n
+evalExp (e1 `EPlus` e2) = 
+  evalExp e1 >>= \v1 ->
+  evalExp e2 >>= \v2 ->
+  return (v1 + v2)
+evalExp (EScope s e) =
+  modify beginScope >>= \_ ->
+  eval s            >>= \_ ->
+  evalExp e         >>= \v ->
+  modify endScope   >>= \_ ->
+  return v
+{{< /highlight >}}
+最後にテストをしてみます。
+以下のテスト関数は```a := 5; b := ({a := 10}; a); c := a```というプログラムをテストしています。
+{{< highlight Haskell >}}
+run :: Stm -> ((), Env Int)
+run s = runHoare (eval s) empty
+
+{-@ ignore testEval @-}
+testEval :: IO ()
+testEval = print $ run s
+  where
+    -- a := 5; b := ({a := 10}; a); c := a
+    s =        ("a" `SAssign` EInt 5) 
+        `SSeq` ("b" `SAssign` EScope ("a" `SAssign` EInt 10) (EVar "a")) 
+        `SSeq` ("c" `SAssign` EVar "a")
+{{< /highlight >}}
+実行結果は以下です。
+ちゃんとスコープを外れると```a```への束縛がもとに戻っていることが確認できます。
+{{< highlight Haskell >}}
+$ stack ghci
+...
+*Liquid.Hoare> testEval
+((),Env {stack = [Push "c",Push "b",Push "a"], env = fromList [("a",[5]),("b",[10]),("c",[5])]})
+{{< /highlight >}}
+
+# 補足: Hoareモナドの圏論的定義
+Hoareモナドの実装はStateモナドにパラメータを付加したようなものになっていますが、そのせいでどういうモナドなのか直感的には分かりにくいと思います。(僕には分かりませんでした。)
+そのため、気になる人のためにHoareモナドの圏論的定義を確認します。
 Bart Jacobs. Dijkstra and Hoare monads in monadic computation. Theoretical Computer Science, Volume 604, 2015, Pages 30-45によると、Hoareモナドは圏論的には以下のように定義されます。
 簡単のためベースとなるモナドをIdentityモナドで固定します。
 
@@ -108,77 +236,14 @@ Bart Jacobs. Dijkstra and Hoare monads in monadic computation. Theoretical Compu
 $f^*(P, h, Q)$の事前条件は、$P(s)$が成り立っていて、かつ$Q(s, s', x)$が成り立つならば$f(x)$の事前条件が成り立つというものです。
 計算部分は状態モナドと同じです。
 事後条件は、$Q$と$post(f(x))$を繋げる$s'$が存在するというものです。
-
-# HoareモナドのLiquidHaskellでの実装?
-それではHoareモナドをLiquidHaskellで実装してみましょう。
-以下のような実装をできればしたいです。
-状態モナドに事前条件、事後条件を型のパラメータとして与えることによって三つ組を表現しています。
-(型パラメータの説明はここでする。)
-(ちなみに型パラメータで述語を表現する理由について言及する。検証をLiquidHaskellで行うため)
-(ついでに、Hoareモナドをわざわざ圏論的に説明した理由についても言及する)
-
-{{< highlight Haskell "linenos=table,linenostart=1" >}}
-{-@ data State s a <p :: s -> Bool, q :: a -> s -> s -> Bool>
-       = State (v: s<p> -> (x::a, s<q x v>)) @-}
-data State s a = State (s -> (a, s))
-
-{-@ return :: forall <p :: s -> Bool>. 
-              y:a 
-           -> State <p, {\x s t -> x == y &&  s == t}> s a @-}
-return :: a -> State s a
-return a = State (\s -> (a, s))
-
-{-@ (>>=) :: forall <p  :: s -> Bool
-                   , q  :: a -> s -> s -> Bool
-                   , p' :: a -> s -> Bool
-                   , q' :: b -> s -> s -> Bool>. 
-                   State <p, q> s a 
-                -> (x:a -> State <p' x, q'> s b)
-                -> State <{\s -> forall x, s'. q x s s' ==> p' x s'}
-                        , {\y s t -> exists x, s'. q x s s' && q' y s' t}> s b @-}
-(>>=) :: State s a -> (a -> State s b) -> State s b
-m >>= k = State (\s -> let (a, s') = runState m s in runState (k a) s')
-{{< /highlight >}}
-
-しかしながら、このコードは構文検査に通りません。
-LiquidHaskellは検証を決定可能にするため、量化子を含まない論理式しか書けず、上のような実装はできませんでした。
-
-ためしにフルのHoareモナドを諦めて弱い形で実装してみようとしてみましたが駄目でした。
-
-{{< highlight Haskell "linenos=table,linenostart=21">}}
-{-@ data State s a <p :: s -> Bool, q :: a -> s -> Bool> = State (s<p> -> (x::a, s<q x>)) @-}
-data State s a = State (s -> (a, s))
-
-{-@ return :: forall <p :: a -> s -> Bool>. x:a -> State <p x, {\y s -> x == y && p y s}> s a @-}
-return :: a -> State s a
-return a = State (\s -> (a, s))
-{{< /highlight >}}
-
-このコードだと以下のエラーが出ました。
-Abstract Predicateの部分適用はできないらしいです。
-エラーに書いてあるissueの解決策をやってみてもダメでした。
-
-{{< highlight bash >}}
-/src/Liquid/State.hs:33:15-85: Error: Malformed predicate application
-
- 33 | {-@ return :: forall <p :: a -> s -> Bool>. x:a -> State <p x, {\y s -> x == y && p y s}> s a @-}
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-     The 1st argument of Liquid.State.State<[]> is predicate `p`
-     which expects 1 arguments but is given only 0
-
-     Abstract predicates cannot be partially applied; for a possible fix see:
-         https://github.com/ucsd-progsys/liquidhaskell/issues/594
-{{< /highlight >}}
-いくつか頑張ってみましたが、どうやら無理そうです。
-ところでAbstract Refinement周りはイマイチ構文もよくわからないし、検査失敗して出てくるエラーもよくわからないので、もし詳しい人がいたら教えてください。
+上で用いた実装では、$P$、$Q$が述語パラメータとなっていました。
 
 # まとめ
-今回はLiquidHaskellではできないことを見ました。
-前回のコードの状態モナドによるリファクタリングを通して、Hoareモナドの必要性を述べました。
-また、Hoareモナドは現状のLiquidHaskellでは書けないことを見ました。
+今回はLiquidHaskellでHoareモナドを扱いました。
+HoareモナドはStateモナドの状態に対して事前・事後条件を追加したものであることを見ました。
+これによって前々回の実装した```eval```をHoareモナドによってHaskellらしいコードに書き直すことに成功しました。
+また、前回説明したAbstract, Bounded Refinementをふんだんに使うことで、それらの具体例を補いました。
 
-今回でLiquidHaskell入門はひとまず終了です。
-次回はF*入門を書く予定です。
-LiquidHaskellではできなかったHoareモナドでしたが、F*では可能となっており、今回用いたコードをそのままモナディックに書くことが可能です。
-その点について書く予定です。
+当初の予定通り、Hoareモナドまで終わったので、今回で僕のLiquidHaskell入門を終わりにしたいと思います。
+ここまで見ていただいた方はありがとうございました。
+
