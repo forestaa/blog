@@ -11,6 +11,8 @@ tags: ["Haskell", "形式検証"]
 Abstract RefinementとBounded Refinementをガンガン使っていきます。
 <!--more-->
 
+今回書いたコードは[gist](https://gist.github.com/forestaa/4a5379061d992183d163935b90585fc9)に公開しています。
+
 # LiquidHaskellとStateモナド
 LiquidHaskellによってスコープ付き環境とそれらの関数に対してより細かい型をつけ、実際に誤った使い方をしたときに型検査に失敗するところまで確認しました。
 LiquidHaskellは確かに有用であることが分かりました。
@@ -61,8 +63,7 @@ $ stack exec -- liquid src/Liquid/Env.hs
 {{< /highlight >}}
 
 # Hoareモナド
-Stateモナドに事前条件と事後条件をつけたようなものはNanevskiらの**Hoareモナド**として知られています。
-詳しくはAleksandar Nanevski, Greg Morrisett and Lars Birkedal. Hoare Type Thoery, Polymorphism and Separation. JFP 2007.を参照してください。
+Stateモナドに事前条件と事後条件をつけたようなものはNanevskiらの**Hoareモナド**[*1]({{< ref "#HTT" >}})として知られています。
 LiquidHaskell上で実装すると以下のようになります。
 前回解説したAbstract Refinementを用いています。
 通常のStateモナドに2つの述語パラメータ```p :: s -> Bool```、```q :: a -> s -> s -> Bool```を加えています。
@@ -193,7 +194,7 @@ $ stack ghci
 # 補足: Hoareモナドの圏論的定義
 Hoareモナドの実装はStateモナドにパラメータを付加したようなものになっていますが、そのせいでどういうモナドなのか直感的には分かりにくいと思います。(僕には分かりませんでした。)
 そのため、気になる人のためにHoareモナドの圏論的定義を確認します。
-Bart Jacobs. Dijkstra and Hoare monads in monadic computation. Theoretical Computer Science, Volume 604, 2015, Pages 30-45によると、Hoareモナドは圏論的には以下のように定義されます。
+Jacobs[*2]({{< ref "#Jacobs" >}})によると、Hoareモナドは圏論的には以下のように定義されます。
 簡単のためベースとなるモナドをIdentityモナドで固定します。
 
 <div class="theoremlabel">
@@ -246,3 +247,6 @@ HoareモナドはStateモナドの状態に対して事前・事後条件を追�
 当初の予定通り、Hoareモナドまで終わったので、今回でLiquidHaskell入門の連載を終わりにしたいと思います。
 ここまで見ていただきありがとうございました。
 
+# 参考文献
+- <a name="HTT"> [Aleksandar Nanevski, Greg Morrisett and Lars Birkedal. Hoare Type Thoery, Polymorphism and Separation. JFP 2007](https://software.imdea.org/~aleks/papers/hoarelogic/jfpsep07.pdf) </a>
+- <a name="Jacobs"> [Bart Jacobs. Dijkstra and Hoare monads in monadic computation. Theoretical Computer Science, Volume 604, 2015, Pages 30-45](http://www.cs.ru.nl/B.Jacobs/PAPERS/Dijkstra-monad-journal.pdf) </a>
