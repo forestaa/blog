@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <title>LiquidHaskell 入門 その3 - 存在と一意性の証明</title>
+  <meta property="og:title" content="LiquidHaskell 入門 その3 - 存在と一意性の証明" />
+  <meta name="twitter:title" content="LiquidHaskell 入門 その3 - 存在と一意性の証明" />
+  <meta name="description" content="前回の記事ではLiquidHaskellを用いて簡単な言語の評価機を作ってみました。
+今回はそれをStateモナドを用いて書き直すために必要な新しい機能であるAbstarct Refinement, Bounded Refinmenetの解説をしていきたいと思います。">
+  <meta property="og:description" content="前回の記事ではLiquidHaskellを用いて簡単な言語の評価機を作ってみました。
+今回はそれをStateモナドを用いて書き直すために必要な新しい機能であるAbstarct Refinement, Bounded Refinmenetの解説をしていきたいと思います。">
+  <meta name="twitter:description" content="前回の記事ではLiquidHaskellを用いて簡単な言語の評価機を作ってみました。
+今回はそれをStateモナドを用いて書き直すために必要な新しい機能であるAbstarct Refinement, Bounded Refinmenetの解説をしていきたいと思います。">
+  <meta name="author" content=""/>
+  <meta property="og:site_name" content="存在と一意性の証明" />
+  <meta property="og:url" content="http://forestaa.github.io/blog/posts/liquidhaskell3/" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="generator" content="Hugo 0.54.0" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/katex.min.css" integrity="sha384-dbVIfZGuN1Yq7/1Ocstc1lUEm+AT+/rCkibIcC/OmWo5f0EA48Vf8CytHzGrSwbQ" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/katex.min.js" integrity="sha384-2BKqo+exmr9su6dir+qCw08N2ZKRucY4PrGQPPWU1A7FtlCGjmEGFqXCv5nyM5Ij" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/contrib/auto-render.min.js" integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "[[", right: "]]", display: true },
+                { left: "$",  right: "$",  display: false},
+            ]
+        });
+    });
+</script>
+
+
+  <link rel="stylesheet" href="/blog/css/style.css" media="all" />
+  <link rel="stylesheet" href="/blog/css/syntax.css" media="all" />
+  <link rel="stylesheet" href="/blog/css/custom.css" media="all" />
+
+  <script src="/blog/js/script.js"></script>
+  <script src="/blog/js/custom.js"></script>
+  <script defer src="/blog/js/fontawesome.js"></script>
+</head>
+
+<body>
+
+<header class="site-header">
+  <nav class="site-navi">
+    <h1 class="site-title"><a href="/blog/">存在と一意性の証明</a></h1>
+    <ul class="site-navi-items">
+      <li class="site-navi-item-tags"><a href="/blog/tags/" title="Tags">Tags</a></li>
+      <li class="site-navi-item-archives"><a href="/blog/archives/" title="Archives">Archives</a></li>
+      <li class="site-navi-item-about"><a href="/blog/about/" title="About">About</a></li>
+    </ul>
+  </nav>
+</header>
+<hr class="site-header-bottom">
+
+  <div class="main" role="main">
+    <article class="article">
+      
+      
+      <h1 class="article-title">LiquidHaskell 入門 その3</h1>
+      
+      <hr class="article-title-bottom">
+      <ul class="article-meta">
+        <li class="article-meta-date"><time>April 29, 2019</time></li>
+        <li class="article-meta-tags">
+          <a href="/blog/tags/haskell/">
+            <i class="fas fa-tag"></i>
+            Haskell
+          </a>&nbsp;
+        </li>
+        <li class="article-meta-tags">
+          <a href="/blog/tags/%E5%BD%A2%E5%BC%8F%E6%A4%9C%E8%A8%BC/">
+            <i class="fas fa-tag"></i>
+            形式検証
+          </a>&nbsp;
+        </li>
+      </ul>
+      
+<aside class="toc">
+  <nav id="TableOfContents">
+<ul>
+<li><a href="#abstract-refinement">Abstract Refinement</a></li>
+<li><a href="#bounded-refinement">Bounded Refinement</a></li>
+<li><a href="#補足-構文に関するいくつかの注意点">補足: 構文に関するいくつかの注意点</a></li>
+<li><a href="#まとめ">まとめ</a></li>
+</ul>
+</nav>
+</aside>
+      <p><a href="/blog/posts/liquidhaskell2/">前回の記事</a>ではLiquidHaskellを用いて簡単な言語の評価機を作ってみました。
+今回はそれをStateモナドを用いて書き直すために必要な新しい機能である<strong>Abstarct Refinement</strong>, <strong>Bounded Refinmenet</strong>の解説をしていきたいと思います。</p>
+
+<h1 id="abstract-refinement">Abstract Refinement</h1>
+
+<p><a href="/blog/posts/liquidhaskell1/">LiquidHaskell入門その1</a>で述べたように、LiquidHaskellでは量化子のない一階述語論理式を書くことができますが、それだけでは表現力が足りないケースが出てきます。
+<a href="https://ucsd-progsys.github.io/liquidhaskell-blog/2013/06/03/abstracting-over-refinements.lhs/">公式ブログ</a>にある例を引っ張ってみます。
+次の関数<code>maxInt</code>を考えてみます。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">maxInt</span> <span class="ow">::</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">Int</span>
+<span class="nf">maxInt</span> <span class="ow">=</span> <span class="kr">if</span> <span class="nf">x</span> <span class="o">&gt;=</span> <span class="nf">y</span> <span class="kr">then</span> <span class="nf">x</span> <span class="kr">else</span> <span class="nf">y</span></code></pre></div>
+この関数のRefinement Typeとして、以下の全ての型は正しいです。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">maxInt</span> <span class="ow">::</span> <span class="kt">Nat</span> <span class="ow">-&gt;</span> <span class="kt">Nat</span> <span class="ow">-&gt;</span> <span class="kt">Nat</span>
+<span class="nf">maxInt</span> <span class="ow">::</span> <span class="p">{</span><span class="nf">v</span><span class="kt">:</span> <span class="kt">Int</span> <span class="o">|</span> <span class="nf">v</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">}</span> <span class="ow">-&gt;</span> <span class="p">{</span><span class="nf">v</span><span class="kt">:</span> <span class="kt">Int</span> <span class="o">|</span> <span class="nf">v</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">}</span> <span class="ow">-&gt;</span> <span class="p">{</span><span class="nf">v</span><span class="kt">:</span> <span class="kt">Int</span> <span class="o">|</span> <span class="nf">v</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">}</span>
+<span class="nf">maxInt</span> <span class="kt">:</span> <span class="kt">Even</span> <span class="ow">-&gt;</span> <span class="kt">Even</span> <span class="ow">-&gt;</span> <span class="kt">Even</span></code></pre></div>
+しかしながら、型を一つ指定してしまうと、他の型としては扱えません。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="cm">{-@ maxInt :: Nat -&gt; Nat -&gt; Nat @-}</span>
+<span class="cm">{-@ test :: Even @-}</span>
+<span class="nf">test</span> <span class="ow">::</span> <span class="kt">Int</span>
+<span class="nf">test</span> <span class="ow">=</span> <span class="nf">maxInt</span> <span class="mi">0</span> <span class="mi">2</span></code></pre></div>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ stack <span class="nb">exec</span> -- liquid src/Liquid/AbstractRefinement.hs
+...
+
+**** RESULT: UNSAFE ************************************************************
+
+/src/Liquid/AbstractRefienement.hs:126:1-18: Error: Liquid Type Mismatch
+
+ <span class="m">126</span> <span class="p">|</span> <span class="nb">test</span> <span class="o">=</span> maxInt <span class="m">2</span> <span class="m">0</span>
+       ^^^^^^^^^^^^^^^^^^
+
+   Inferred <span class="nb">type</span>
+     VV : <span class="o">{</span>v : GHC.Types.Int <span class="p">|</span> v &gt;<span class="o">=</span> <span class="m">0</span><span class="o">}</span>
+
+   not a subtype of Required <span class="nb">type</span>
+     VV : <span class="o">{</span>VV : GHC.Types.Int <span class="p">|</span> VV mod <span class="nv">2</span> <span class="o">==</span> <span class="m">0</span><span class="o">}</span></code></pre></div>
+それではこの関数につけるべき正しい型は何でしょうか？
+Abstrace Refinementは述語に対する量化を提供してくれます。
+つまり、<code>maxInt</code>に対しては以下のような型を付けることができます。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="cm">{-@ maxInt :: forall &lt;p :: Int -&gt; Bool&gt;. Int&lt;p&gt; -&gt; Int&lt;p&gt; -&gt; Int&lt;p&gt; @-}</span>
+<span class="nf">maxInt</span> <span class="ow">::</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">Int</span>
+<span class="nf">maxInt</span> <span class="nf">x</span> <span class="nf">y</span> <span class="ow">=</span> <span class="kr">if</span> <span class="nf">x</span> <span class="o">&gt;=</span> <span class="nf">y</span> <span class="kr">then</span> <span class="nf">x</span> <span class="kr">else</span> <span class="nf">y</span></code></pre></div>
+<code>forall &lt;p :: Int -&gt; Bool&gt;</code>が全称量化された述語を導入しており、<code>Int&lt;p&gt;</code>は(感覚的には)<code>{v: Int | p v}</code>と等価です。(実際に右の書き方をすると<code>Sort Error</code>と怒られます。)
+つまり、述語<code>p</code>を満たす<code>Int</code>型の値を2つ受け取って、<code>p</code>を満たす<code>Int</code>型の値を返すという型が<code>maxInt</code>にはつきました。
+実際に使ってみましょう。
+本来ならば<code>maxInt</code>を使うとき、述語を指定する必要がありそうですが、うまいこと推論してくれます。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="cm">{-@ test2 :: Even @-}</span>
+<span class="nf">test2</span> <span class="ow">::</span> <span class="kt">Int</span>
+<span class="nf">test2</span> <span class="ow">=</span> <span class="nf">maxInt</span> <span class="mi">2</span> <span class="mi">0</span></code></pre></div>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ stack <span class="nb">exec</span> -- liquid src/Liquid/AbstractRefinement.hs
+...
+
+**** RESULT: SAFE **************************************************************</code></pre></div>
+データ型の宣言にもAbstract Refinementが使えます。以下では<code>List</code>型の宣言にAbstract Refinementを用いた例です。
+テストでは述語としてすべての値が等しいというものを与えているので、<code>testListUnSafe</code>のみエラーを報告されています。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="cm">{-@ 
+</span><span class="cm">data List a &lt;p :: a -&gt; a -&gt; Bool&gt; where
+</span><span class="cm">    Nil :: List &lt;p&gt; a
+</span><span class="cm">  | Cons :: h:a -&gt; List &lt;p&gt; (a&lt;p h&gt;) -&gt; List &lt;p&gt; a
+</span><span class="cm">@-}</span>
+<span class="kr">data</span> <span class="kt">List</span> <span class="nf">a</span> <span class="kr">where</span>
+  <span class="kt">Nil</span> <span class="ow">::</span> <span class="kt">List</span> <span class="nf">a</span>
+  <span class="kt">Cons</span> <span class="ow">::</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">List</span> <span class="nf">a</span> <span class="ow">-&gt;</span> <span class="kt">List</span> <span class="nf">a</span>
+
+<span class="cm">{-@ testListSafe :: List &lt;{\s t -&gt; s == t}&gt; Int @-}</span>
+<span class="nf">testListSafe</span> <span class="ow">::</span> <span class="kt">List</span> <span class="kt">Int</span>
+<span class="nf">testListSafe</span> <span class="ow">=</span> <span class="kt">Cons</span> <span class="mi">1</span> <span class="o">$</span> <span class="kt">Cons</span> <span class="mi">1</span> <span class="kt">Nil</span>
+
+<span class="cm">{-@ testListUnSafe :: List &lt;{\s t -&gt; s == t}&gt; Int @-}</span>
+<span class="nf">testListUnSafe</span> <span class="ow">::</span> <span class="kt">List</span> <span class="kt">Int</span>
+<span class="nf">testListUnSafe</span> <span class="ow">=</span> <span class="kt">Cons</span> <span class="mi">2</span> <span class="o">$</span> <span class="kt">Cons</span> <span class="mi">1</span> <span class="kt">Nil</span></code></pre></div>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ stack <span class="nb">exec</span> -- liquid src/Liquid/AbstractRefinement.hs
+...
+
+**** RESULT: UNSAFE ************************************************************
+
+
+ /src/Liquid/AbstractRefinement.hs:39:1-36: Error: Liquid Type Mismatch
+
+ <span class="m">39</span> <span class="p">|</span> <span class="nv">testListUnSafe</span> <span class="o">=</span> Cons <span class="m">2</span> $ Cons <span class="m">1</span> Nil
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   Inferred <span class="nb">type</span>
+     VV : GHC.Types.Int
+
+   not a subtype of Required <span class="nb">type</span>
+     VV : <span class="o">{</span>VV : GHC.Types.Int <span class="p">|</span> ?a <span class="o">==</span> VV<span class="o">}</span>
+
+   In Context
+     ?a : GHC.Types.Int</code></pre></div></p>
+
+<h1 id="bounded-refinement">Bounded Refinement</h1>
+
+<p>有界量化や型クラスのように、全称量化を得たらそのドメインを制限して情報量を増やすような仕組みが欲しくなります。
+述語に対する全称量化であったAbstract Refinementに対し、そのドメインを制限するのがBounded Refinementです。
+早速具体例を見ていきましょう。
+関数合成<code>(.)</code>は以下のように書けます。
+引数として2つの関数<code>f: (y:b -&gt; c&lt;p y&gt;)</code>、<code>g: (z:a -&gt; b&lt;q z&gt;)</code>を受け取って新しい関数<code>f . g: (a -&gt; c&lt;r x&gt;)</code>を返すのですが、<code>r</code>の条件として<code>{x::a, w::b&lt;q x&gt; |- c&lt;p w&gt; &lt;: c&lt;r x&gt;}</code>という制限を与えています。
+つまり、事後条件が連鎖していきます。
+実際に使ってみましょう。
+<code>incr</code>を2回適用する関数を合成した<code>doubleIncr</code>は確かに検査されました。
+<div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="cm">{-@
+</span><span class="cm">(.) :: forall &lt; p :: b -&gt; c -&gt; Bool
+</span><span class="cm">              , q :: a -&gt; b -&gt; Bool
+</span><span class="cm">              , r :: a -&gt; c -&gt; Bool
+</span><span class="cm">              &gt;.
+</span><span class="cm">       {x::a, w::b&lt;q x&gt; |- c&lt;p w&gt; &lt;: c&lt;r x&gt;}
+</span><span class="cm">       f:(y:b -&gt; c&lt;p y&gt;)
+</span><span class="cm">    -&gt; g:(z:a -&gt; b&lt;q z&gt;)
+</span><span class="cm">    -&gt; x:a -&gt; c&lt;r x&gt;
+</span><span class="cm">@-}</span>
+<span class="p">(</span><span class="o">.</span><span class="p">)</span> <span class="nf">f</span> <span class="nf">g</span> <span class="nf">x</span> <span class="ow">=</span> <span class="nf">f</span> <span class="p">(</span><span class="nf">g</span> <span class="nf">x</span><span class="p">)</span>
+
+<span class="c1">-- example</span>
+<span class="cm">{-@ incr :: x: Int -&gt; {y: Int | y = x + 1} @-}</span>
+<span class="nf">incr</span> <span class="ow">::</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">Int</span>
+<span class="nf">incr</span> <span class="ow">=</span> <span class="p">(</span><span class="o">+</span><span class="p">)</span> <span class="mi">1</span>
+
+<span class="cm">{-@ doubleIncr :: x: Int -&gt; {y: Int | y = x + 2} @-}</span>
+<span class="nf">doubleIncr</span> <span class="ow">=</span> <span class="nf">incr</span> <span class="o">.</span> <span class="nf">incr</span></code></pre></div></p>
+
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ stack <span class="nb">exec</span> -- liquid src/Liquid/AbstractRefinement.hs
+...
+
+**** RESULT: SAFE **************************************************************</code></pre></div>
+
+<h1 id="補足-構文に関するいくつかの注意点">補足: 構文に関するいくつかの注意点</h1>
+
+<ul>
+<li>Abstract Refinementではあくまで述語の全称量化しかできないので、<code>forall &lt;p :: Int -&gt; Int&gt;</code>みたいな書き方をするとコンパイルが通りません。
+古い情報だと<code>forall &lt;p :: Int -&gt; Prop&gt;</code>のように書かれていますが、これもコンパイルが通りません。</li>
+<li>全称量化された述語の具体するときの構文についてはまとまった情報がありません。(Parserを読む気にはなりませんでした。)
+<a href="https://github.com/ucsd-progsys/liquidhaskell/tree/develop/tests">公式レポジトリのテスト</a>を読むなりして適当に推測しましょう。
+今回の記事と次回の記事でもいくつか例を出していきます。</li>
+<li>Bounded Refinement周りの構文についてもまとまった情報がありません。これも次回の記事でいくつか具体例を出してフォローしていくつもりです。</li>
+</ul>
+
+<h1 id="まとめ">まとめ</h1>
+
+<p>今回はAbstract RefinementとBounded Refinementについて解説しました。
+LiquidHaskellでは量化子のない一階述語論理式しか書けませんが、Abstract Refinementは述語の全称量化、Bounded Refinementは述語の有界量化を提供します。
+これらによってLiquidHaskellで表現できる条件の幅が広がることを確認しました。</p>
+
+<p><a href="/blog/posts/liquidhaskell4/">次回</a>はこれらを用いてHoareモナドを実装し、前回の評価機をHoareモナドを用いてよりHaskellらしいコードに書き直します。</p>
+    </article>
+
+    
+<ul class="article-share">
+  <li>
+    <a href="https://twitter.com/share" class="twitter-share-button">Tweet</a> <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+  </li>
+  <li>
+    <div class="fb-share-button" data-href="http://forestaa.github.io/blog/posts/liquidhaskell3/" data-layout="button_count" data-action="like" data-size="small" data-show-faces="true" data-share="true"></div>
+    <div id="fb-root"></div>
+    <script>(function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.10";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));</script>
+  </li>
+  <li>
+    <a href="http://b.hatena.ne.jp/entry/" class="hatena-bookmark-button" data-hatena-bookmark-layout="basic-label-counter" data-hatena-bookmark-lang="en" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+  </li>
+  <li>
+    <a data-pocket-label="pocket" data-pocket-count="horizontal" class="pocket-btn" data-lang="en"></a>
+    <script>!function(d,i){if(!d.getElementById(i)){var j=d.createElement("script");j.id=i;j.src="https://widgets.getpocket.com/v1/j/btn.js?v=1";var w=d.getElementById(i);d.body.appendChild(j);}}(document,"pocket-btn-js");</script>
+  </li>
+</ul>
+
+    <div class="disqus-comments">
+      <div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "forestaa-github-io" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </div>
+
+    <ul class="pager article-pager">
+      <li class="pager-newer">
+          <a href="/blog/posts/liquidhaskell4/" data-toggle="tooltip" data-placement="top" title="LiquidHaskell 入門 その4">&lt; Newer</a>
+      </li>
+      <li class="pager-older">
+        <a href="/blog/posts/liquidhaskell2/" data-toggle="tooltip" data-placement="top" title="LiquidHaskell 入門 その2">Older &gt;</a>
+      </li>
+    </ul>
+  </div>
+
+
+<div class="site-footer">
+  <div class="copyright"></div>
+  <ul class="site-footer-items">
+  </ul>
+  <div class="powerdby">
+    Powered by <a href="https://gohugo.io/">Hugo</a> and <a href="https://github.com/taikii/whiteplain">Whiteplain</a>
+  </div>
+</div>
+
+
+</body>
+</html>

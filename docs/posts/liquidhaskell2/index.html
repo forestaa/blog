@@ -90,7 +90,7 @@
 </ul>
 </nav>
 </aside>
-      <p><a href="https://forestaa.github.io/blog/posts/liquidhaskell1/">前回の記事</a>ではLiquidHaskellの基礎を学びました。
+      <p><a href="/blog/posts/liquidhaskell1/">前回の記事</a>ではLiquidHaskellの基礎を学びました。
 今回はLiquidHaskellを用いて、とあるデータ型に対して、通常のHaskellの型の上に、実装者の暗黙の意図を反映したより細かい型をつけてみたいと思います。</p>
 
 <h1 id="スコープ付き環境">スコープ付き環境</h1>
@@ -103,13 +103,11 @@
 このデータ型は<a href="https://www.amazon.co.jp/%E6%9C%80%E6%96%B0%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%A9%E6%A7%8B%E6%88%90%E6%8A%80%E6%B3%95-Andrew-W-Appel/dp/4798114685">Tiger本</a>から拝借しました。
 このデータ型をここではスコープ付き環境と呼ぶことにします。
 スコープ付き環境はスコープの概念のあるプログラミング言語のインタプリタでの変数の環境や、型検査時の型環境を表すことが可能です。
-Tiger本ではTiger言語の型検査器の実装等に実際に用いられていました。</p>
-
+Tiger本ではTiger言語の型検査器の実装等に実際に用いられていました。
 <div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="kr">type</span> <span class="kt">Id</span> <span class="ow">=</span> <span class="kt">String</span>
 <span class="kr">data</span> <span class="kt">ScopeOp</span> <span class="ow">=</span> <span class="kt">Begin</span> <span class="o">|</span> <span class="kt">Push</span> <span class="kt">Id</span> <span class="kr">deriving</span> <span class="p">(</span><span class="kt">Eq</span><span class="p">,</span> <span class="kt">Show</span><span class="p">)</span>
 <span class="kr">data</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="p">{</span> <span class="nf">stack</span> <span class="ow">::</span> <span class="p">[</span><span class="kt">ScopeOp</span><span class="p">],</span> <span class="nf">env</span> <span class="ow">::</span> <span class="kt">Map</span><span class="o">.</span><span class="kt">Map</span> <span class="kt">Id</span> <span class="p">[</span><span class="nf">a</span><span class="p">]</span> <span class="p">}</span> <span class="kr">deriving</span> <span class="p">(</span><span class="kt">Eq</span><span class="p">,</span> <span class="kt">Show</span><span class="p">)</span></code></pre></div>
-
-<p>このデータ構造を操作する関数として以下のようなものがあります。
+このデータ構造を操作する関数として以下のようなものがあります。
 <code>empty, insert, lookup</code>は通常のマップと同様な関数です。
 ただし、<code>insert</code>時にはスタックに<code>Push id</code>を積むことで、このスコープ内で<code>id</code>に値が束縛されたということを記録します。
 マップ標準の関数に加えて、<code>beginScope</code>と<code>endScope</code>という特徴的な関数があります。
@@ -138,9 +136,8 @@ Tiger本ではTiger言語の型検査器の実装等に実際に用いられて�
     <span class="nf">pop</span> <span class="kt">[]</span> <span class="ow">=</span> <span class="kt">Nothing</span>
     <span class="nf">pop</span> <span class="p">[</span><span class="kr">_</span><span class="p">]</span> <span class="ow">=</span> <span class="kt">Nothing</span>
     <span class="nf">pop</span> <span class="p">(</span><span class="kr">_</span><span class="kt">:</span><span class="nf">as</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Just</span> <span class="nf">as</span>
-<span class="nf">endScope</span> <span class="p">(</span><span class="kt">Env</span> <span class="p">(</span><span class="kt">Begin</span> <span class="kt">:</span> <span class="nf">rest</span><span class="p">)</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="nf">rest</span> <span class="nf">e</span></code></pre></div></p>
-
-<p>実際に使ってみましょう。
+<span class="nf">endScope</span> <span class="p">(</span><span class="kt">Env</span> <span class="p">(</span><span class="kt">Begin</span> <span class="kt">:</span> <span class="nf">rest</span><span class="p">)</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="nf">rest</span> <span class="nf">e</span></code></pre></div>
+実際に使ってみましょう。
 以下のテストコードを走らせます。
 Stateモナドの状態にスコープ付き環境<code>Env Int</code>を与えています。
 <div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">testEnv</span> <span class="ow">::</span> <span class="kt">IO</span> <span class="nb">()</span>
@@ -151,9 +148,8 @@ Stateモナドの状態にスコープ付き環境<code>Env Int</code>を与え�
   <span class="nf">modify</span> <span class="p">(</span><span class="nf">insert</span> <span class="s">&#34;x&#34;</span> <span class="mi">12</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="nf">printState</span>
   <span class="nf">modify</span> <span class="nf">endScope</span>        <span class="o">&gt;&gt;</span> <span class="nf">printState</span>
   <span class="kr">where</span>
-    <span class="nf">printState</span> <span class="ow">=</span> <span class="nf">get</span> <span class="o">&gt;&gt;=</span> <span class="nf">lift</span> <span class="o">.</span> <span class="nf">print</span></code></pre></div></p>
-
-<p>結果は以下のようになります。
+    <span class="nf">printState</span> <span class="ow">=</span> <span class="nf">get</span> <span class="o">&gt;&gt;=</span> <span class="nf">lift</span> <span class="o">.</span> <span class="nf">print</span></code></pre></div>
+結果は以下のようになります。
 スコープから出るとスコープ内で挿入した<code>x = 12</code>が解放されていることが分かります。
 また、スタックに行った操作が記録され、<code>endScope</code>が呼ばれると<code>Begin</code>まで解放されていることも分かります。
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ stack ghci
@@ -182,9 +178,8 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
    <span class="p">|</span>
 <span class="m">19</span> <span class="p">|</span> endScope <span class="o">(</span>Env <span class="o">(</span>Push id : rest<span class="o">)</span> e<span class="o">)</span>  <span class="o">=</span> endScope $ Env rest <span class="o">(</span>Map.update pop id e<span class="o">)</span>
    <span class="p">|</span> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-...</code></pre></div></p>
-
-<p>従って、これらの関数はMaybeモナドやEitherモナドに包んでエラーを表現するのがお行儀がよいです。
+...</code></pre></div>
+従って、これらの関数はMaybeモナドやEitherモナドに包んでエラーを表現するのがお行儀がよいです。
 しかしながら、これらは呼び出すときに以下のルールを定めることで、実際にはそのパターンにマッチすることはなく、問題にならないことが分かります。</p>
 
 <ol>
@@ -199,9 +194,8 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
 
 <p>まず1を表現するために、<code>Env</code>の定義で値のリストの長さを0より大きいという型を与えてあげてみます。
 <div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="cm">{-@ data Env a = Env { stack :: [ScopeOp], env :: (Map Id { v: [a] | len v &gt; 0 })} @-}</span>
-<span class="kr">data</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="p">{</span> <span class="nf">stack</span> <span class="ow">::</span> <span class="p">[</span><span class="kt">ScopeOp</span><span class="p">],</span> <span class="nf">env</span> <span class="ow">::</span> <span class="kt">Map</span><span class="o">.</span><span class="kt">Map</span> <span class="kt">Id</span> <span class="p">[</span><span class="nf">a</span><span class="p">]}</span> <span class="kr">deriving</span> <span class="p">(</span><span class="kt">Eq</span><span class="p">,</span> <span class="kt">Show</span><span class="p">)</span></code></pre></div></p>
-
-<p>2を型で表現するためには、<code>Env</code>のスコープ数を表現することができるときれいに型がつきそうです。
+<span class="kr">data</span> <span class="kt">Env</span> <span class="nf">a</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="p">{</span> <span class="nf">stack</span> <span class="ow">::</span> <span class="p">[</span><span class="kt">ScopeOp</span><span class="p">],</span> <span class="nf">env</span> <span class="ow">::</span> <span class="kt">Map</span><span class="o">.</span><span class="kt">Map</span> <span class="kt">Id</span> <span class="p">[</span><span class="nf">a</span><span class="p">]}</span> <span class="kr">deriving</span> <span class="p">(</span><span class="kt">Eq</span><span class="p">,</span> <span class="kt">Show</span><span class="p">)</span></code></pre></div>
+2を型で表現するためには、<code>Env</code>のスコープ数を表現することができるときれいに型がつきそうです。
 そこで、以下の補助関数を定義します。
 <code>beginNum</code>はスタック内の<code>Begin</code>の数、つまり現在のスコープの深さを計算します。
 前回は説明していなかったのですが、<code>measure</code>となる関数には停止性を保証しておく必要があるため、メトリクスを書いておきます。
@@ -221,9 +215,8 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
 
 <span class="cm">{-@ type NEEnv a = {e: Env a | scopeNum e &gt; 0} @-}</span>
 <span class="cm">{-@ type EnvN a N = {e: Env a | scopeNum e = N} @-}</span>
-<span class="cm">{-@ type EnvX a E = {e: Env a | scopeNum e = scopeNum E} @-}</span></code></pre></div></p>
-
-<p>これらを用いて先ほど定義した関数にさらに細かい型を与えてみます。
+<span class="cm">{-@ type EnvX a E = {e: Env a | scopeNum e = scopeNum E} @-}</span></code></pre></div>
+これらを用いて先ほど定義した関数にさらに細かい型を与えてみます。
 <code>empty</code>はスコープが0の<code>Env</code>を返す、<code>insert</code>はスコープの大きさを変えない、といったような型を与えることができました。
 <code>beginScope</code>はスコープの深さを1増やす、<code>endScope</code>はスコープが空でない<code>Env</code>を受け取ってスコープの深さを1減らす、といったような型を与えることができます。
 <code>endScope</code>には無限ループしないことを示すためにメトリックを与えています。
@@ -252,9 +245,8 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
     <span class="nf">pop</span> <span class="kt">[]</span> <span class="ow">=</span> <span class="kt">Nothing</span>
     <span class="nf">pop</span> <span class="p">[</span><span class="kr">_</span><span class="p">]</span> <span class="ow">=</span> <span class="kt">Nothing</span>
     <span class="nf">pop</span> <span class="p">(</span><span class="kr">_</span><span class="kt">:</span><span class="nf">as</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Just</span> <span class="nf">as</span>
-<span class="nf">endScope</span> <span class="p">(</span><span class="kt">Env</span> <span class="p">(</span><span class="kt">Begin</span> <span class="kt">:</span> <span class="nf">rest</span><span class="p">)</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="nf">rest</span> <span class="nf">e</span></code></pre></div></p>
-
-<p>これで先ほどの1,2のルールを表現することができました。
+<span class="nf">endScope</span> <span class="p">(</span><span class="kt">Env</span> <span class="p">(</span><span class="kt">Begin</span> <span class="kt">:</span> <span class="nf">rest</span><span class="p">)</span> <span class="nf">e</span><span class="p">)</span> <span class="ow">=</span> <span class="kt">Env</span> <span class="nf">rest</span> <span class="nf">e</span></code></pre></div>
+これで先ほどの1,2のルールを表現することができました。
 実際にLiquidHaskellでコンパイルしてみましょう。
 今回は<code>ScopeOp</code>でバリアント型を用いたため、オプション<code>--exactdc</code>を使う必要があります。
 ファイルの先頭に<code>{-@ LIQUID &quot;--exactdc&quot; @-}</code>を記述してもokです。
@@ -275,9 +267,8 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
 <span class="kr">data</span> <span class="kt">Exp</span> <span class="ow">=</span> <span class="kt">EVar</span> <span class="kt">Id</span>
          <span class="o">|</span> <span class="kt">EInt</span> <span class="kt">Int</span>
          <span class="o">|</span> <span class="kt">EPlus</span> <span class="kt">Exp</span> <span class="kt">Exp</span>
-         <span class="o">|</span> <span class="kt">EScope</span> <span class="kt">Stm</span> <span class="kt">Exp</span></code></pre></div></p>
-
-<p>これの<code>eval</code>を実装したものが以下です。
+         <span class="o">|</span> <span class="kt">EScope</span> <span class="kt">Stm</span> <span class="kt">Exp</span></code></pre></div>
+これの<code>eval</code>を実装したものが以下です。
 <code>SPrint</code>はによる副作用はIOモナドでもよいのですが、MonadWriterで代用します。
 未定義変数へのアクセスが起こりうるので、MonadErrorを与えます。
 簡単のため、停止性検査を無効にしておきます。
@@ -315,12 +306,10 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
   <span class="p">(</span><span class="kr">_</span><span class="p">,</span> <span class="nf">env2</span><span class="p">)</span> <span class="ow">&lt;-</span> <span class="nf">eval</span> <span class="nf">s</span> <span class="nf">env1</span>
   <span class="p">(</span><span class="nf">v</span><span class="p">,</span> <span class="nf">env3</span><span class="p">)</span> <span class="ow">&lt;-</span> <span class="nf">evalExp</span> <span class="nf">e</span> <span class="nf">env2</span>
   <span class="kr">let</span> <span class="nf">env4</span> <span class="ow">=</span> <span class="nf">endScope</span> <span class="nf">env3</span>
-  <span class="nf">return</span> <span class="p">(</span><span class="nf">v</span><span class="p">,</span> <span class="nf">env4</span><span class="p">)</span></code></pre></div></p>
-
-<p>ここで重要なのは、<code>evalExp</code>内の<code>EScope</code>のパターンマッチの部分です。
+  <span class="nf">return</span> <span class="p">(</span><span class="nf">v</span><span class="p">,</span> <span class="nf">env4</span><span class="p">)</span></code></pre></div>
+ここで重要なのは、<code>evalExp</code>内の<code>EScope</code>のパターンマッチの部分です。
 <code>beginScope</code>と<code>endScope</code>で挟んであります。
-例えば、ここのうち<code>endScope</code>をコメントアウトすると、以下のようにちゃんとエラーを報告してくれます。</p>
-
+例えば、ここのうち<code>endScope</code>をコメントアウトすると、以下のようにちゃんとエラーを報告してくれます。
 <div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">$ stack <span class="nb">exec</span> -- liquid src/Liquid/Env.hs
 ...
 **** RESULT: UNSAFE ************************************************************
@@ -343,8 +332,7 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
 
    In Context
      env0 : <span class="o">{</span>env0 : <span class="o">(</span>Liquid.Env.Env GHC.Types.Int<span class="o">)</span> <span class="p">|</span> Liquid.Env.scopeNum env0 &gt;<span class="o">=</span> <span class="m">0</span><span class="o">}</span></code></pre></div>
-
-<p>それではLiquidHaskellでコンパイルしたうえで、正しく動いているかテストしてみましょう。
+それではLiquidHaskellでコンパイルしたうえで、正しく動いているかテストしてみましょう。
 以下のテスト関数を用意してください。
 読みにくいですが、<code>a := 5 + 3; print [a, {a := 10, a}]</code>のようなプログラムをテストをしています。
 <div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">run</span> <span class="ow">::</span> <span class="kt">Stm</span> <span class="ow">-&gt;</span> <span class="kt">Either</span> <span class="kt">EvalException</span> <span class="p">((</span><span class="nb">()</span><span class="p">,</span> <span class="kt">Env</span> <span class="kt">Int</span><span class="p">),</span> <span class="p">[</span><span class="kt">Int</span><span class="p">])</span>
@@ -356,16 +344,14 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
   <span class="kr">where</span>
     <span class="nf">s</span> <span class="ow">=</span>        <span class="p">(</span><span class="s">&#34;a&#34;</span> <span class="p">`</span><span class="kt">SAssign</span><span class="p">`</span> <span class="p">(</span><span class="kt">EInt</span> <span class="mi">5</span> <span class="p">`</span><span class="kt">EPlus</span><span class="p">`</span> <span class="kt">EInt</span> <span class="mi">3</span><span class="p">))</span> 
         <span class="p">`</span><span class="kt">SSeq</span><span class="p">`</span> <span class="kt">SPrint</span> <span class="p">[</span> <span class="kt">EVar</span> <span class="s">&#34;a&#34;</span><span class="p">,</span> 
-                        <span class="kt">EScope</span> <span class="p">(</span><span class="s">&#34;a&#34;</span> <span class="p">`</span><span class="kt">SAssign</span><span class="p">`</span> <span class="kt">EInt</span> <span class="mi">10</span><span class="p">)</span> <span class="p">(</span><span class="kt">EVar</span> <span class="s">&#34;a&#34;</span><span class="p">)]</span> </code></pre></div></p>
-
-<p>実行結果は以下です。
+                        <span class="kt">EScope</span> <span class="p">(</span><span class="s">&#34;a&#34;</span> <span class="p">`</span><span class="kt">SAssign</span><span class="p">`</span> <span class="kt">EInt</span> <span class="mi">10</span><span class="p">)</span> <span class="p">(</span><span class="kt">EVar</span> <span class="s">&#34;a&#34;</span><span class="p">)]</span> </code></pre></div>
+実行結果は以下です。
 これはまた読みづらいですが、<code>Env</code>が終了時の環境で、一番右の<code>[8, 10]</code>が<code>SPrint</code>による出力結果です。
-問題ないようです。</p>
-
+問題ないようです。
 <div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="o">$</span> <span class="nf">stack</span> <span class="nf">ghci</span>
 <span class="o">...</span>
 <span class="o">*</span><span class="kt">Main</span> <span class="kt">Env</span><span class="o">&gt;</span> <span class="nf">testEval</span>
-<span class="kt">Right</span> <span class="p">((</span><span class="nb">()</span><span class="p">,</span><span class="kt">Env</span> <span class="p">{</span><span class="nf">stack</span> <span class="ow">=</span> <span class="p">[</span><span class="kt">Push</span> <span class="s">&#34;a&#34;</span><span class="p">],</span> <span class="nf">env</span> <span class="ow">=</span> <span class="nf">fromList</span> <span class="p">[(</span><span class="s">&#34;a&#34;</span><span class="p">,[</span><span class="mi">8</span><span class="p">])]}),[</span><span class="mi">8</span><span class="p">,</span><span class="mi">10</span><span class="p">])</span></code></pre></div>
+<span class="kt">Right</span> <span class="p">((</span><span class="nb">()</span><span class="p">,</span><span class="kt">Env</span> <span class="p">{</span><span class="nf">stack</span> <span class="ow">=</span> <span class="p">[</span><span class="kt">Push</span> <span class="s">&#34;a&#34;</span><span class="p">],</span> <span class="nf">env</span> <span class="ow">=</span> <span class="nf">fromList</span> <span class="p">[(</span><span class="s">&#34;a&#34;</span><span class="p">,[</span><span class="mi">8</span><span class="p">])]}),[</span><span class="mi">8</span><span class="p">,</span><span class="mi">10</span><span class="p">])</span></code></pre></div></p>
 
 <h1 id="まとめ">まとめ</h1>
 
@@ -377,21 +363,17 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
 <h1 id="次-々-回予告">次(々)回予告</h1>
 
 <p>先ほどのコードを読んでHaskellerの皆さんはもどかしい気持ちになったのではないでしょうか。
-もう一度<code>eval</code>の型を確認してみましょう。</p>
-
+もう一度<code>eval</code>の型を確認してみましょう。
 <div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">eval</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Stm</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="nf">m</span> <span class="p">(</span><span class="nb">()</span><span class="p">,</span> <span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span>
 <span class="nf">evalExp</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Exp</span> <span class="ow">-&gt;</span> <span class="kt">Env</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="nf">m</span> <span class="p">(</span><span class="kt">Int</span><span class="p">,</span> <span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span></code></pre></div>
-
-<p>この型はStateモナドを用いると以下のように書き直せます。</p>
-
+この型はStateモナドを用いると以下のように書き直せます。
 <div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="nf">eval</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Stm</span> <span class="ow">-&gt;</span> <span class="kt">StateT</span> <span class="p">(</span><span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span> <span class="nf">m</span> <span class="nb">()</span>
 <span class="nf">evalExp</span> <span class="ow">::</span> <span class="p">(</span><span class="kt">MonadWriter</span> <span class="p">[</span><span class="kt">Int</span><span class="p">]</span> <span class="nf">m</span><span class="p">,</span> <span class="kt">MonadError</span> <span class="kt">EvalException</span> <span class="nf">m</span><span class="p">)</span> <span class="ow">=&gt;</span> <span class="kt">Exp</span> <span class="ow">-&gt;</span> <span class="kt">StateT</span> <span class="p">(</span><span class="kt">Env</span> <span class="kt">Int</span><span class="p">)</span> <span class="nf">m</span> <span class="kt">Int</span></code></pre></div>
-
-<p>そのため、Stateモナドの状態に対して事前条件・事後条件を設定したくなります。
-そしてこれが前回の記事の冒頭で触れたHoareモナドの正体となります。
+そのため、Stateモナドの状態に対して事前条件・事後条件を設定したくなります。
+そしてこれが<a href="/blog/posts/liquidhaskell1/">前回の記事</a>の冒頭で触れたHoareモナドの正体となります。
 しかしながら、前回軽く触れたようにLiquidHaskellでは量化子のない述語論理式しか書けないため、そのままではHoareモナドが実装できません。
 ここでLiquidHaskellの発展的?な機能である<strong>Abstract Refienement</strong>、<strong>Bounded Refinement</strong>を用いてHoareモナドを実装してみます。
-次回はAbstract Refinement、Bounded Refinementの解説をし、次々回でHoareモナドの実装をして上のコードを書き直してみます。</p>
+<a href="/blog/posts/liquidhaskell3/">次回</a>はAbstract Refinement、Bounded Refinementの解説をし、<a href="/blog/posts/liquidhaskell4/">次々回</a>でHoareモナドの実装をして上のコードを書き直してみます。</p>
     </article>
 
     
@@ -443,7 +425,9 @@ Env <span class="o">{</span><span class="nv">stack</span> <span class="o">=</spa
     </div>
 
     <ul class="pager article-pager">
-      <li class="pager-newer pager-noitem">&lt; Newer</li>
+      <li class="pager-newer">
+          <a href="/blog/posts/liquidhaskell3/" data-toggle="tooltip" data-placement="top" title="LiquidHaskell 入門 その3">&lt; Newer</a>
+      </li>
       <li class="pager-older">
         <a href="/blog/posts/liquidhaskell1/" data-toggle="tooltip" data-placement="top" title="LiquidHaskell 入門 その1">Older &gt;</a>
       </li>

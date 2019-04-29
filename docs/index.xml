@@ -6,10 +6,31 @@
     <description>Recent content on 存在と一意性の証明</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Fri, 29 Mar 2019 11:30:36 +0900</lastBuildDate>
+    <lastBuildDate>Mon, 29 Apr 2019 18:38:36 +0900</lastBuildDate>
     
 	<atom:link href="http://forestaa.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>LiquidHaskell 入門 その4</title>
+      <link>http://forestaa.github.io/blog/posts/liquidhaskell4/</link>
+      <pubDate>Mon, 29 Apr 2019 18:38:36 +0900</pubDate>
+      
+      <guid>http://forestaa.github.io/blog/posts/liquidhaskell4/</guid>
+      <description>&lt;p&gt;&lt;a href=&#34;http://forestaa.github.io/blog/blog/posts/liquidhaskell3/&#34;&gt;前回の記事&lt;/a&gt;はLiquidHaskellの表現力を高める機能であるAbstract RefinementとBounded Refinementの解説をしました。
+今回は&lt;a href=&#34;http://forestaa.github.io/blog/blog/posts/liquidhaskell2/&#34;&gt;前々回&lt;/a&gt;のナイーブなコードを&lt;strong&gt;Hoareモナド&lt;/strong&gt;を用いてHaskellらしいコードに書き直してみます。
+Abstract RefinementとBounded Refinementをガンガン使っていきます。&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>LiquidHaskell 入門 その3</title>
+      <link>http://forestaa.github.io/blog/posts/liquidhaskell3/</link>
+      <pubDate>Mon, 29 Apr 2019 18:37:53 +0900</pubDate>
+      
+      <guid>http://forestaa.github.io/blog/posts/liquidhaskell3/</guid>
+      <description>&lt;p&gt;&lt;a href=&#34;http://forestaa.github.io/blog/blog/posts/liquidhaskell2/&#34;&gt;前回の記事&lt;/a&gt;ではLiquidHaskellを用いて簡単な言語の評価機を作ってみました。
+今回はそれをStateモナドを用いて書き直すために必要な新しい機能である&lt;strong&gt;Abstarct Refinement&lt;/strong&gt;, &lt;strong&gt;Bounded Refinmenet&lt;/strong&gt;の解説をしていきたいと思います。&lt;/p&gt;</description>
+    </item>
     
     <item>
       <title>LiquidHaskell 入門 その2</title>
@@ -17,7 +38,7 @@
       <pubDate>Fri, 29 Mar 2019 11:30:36 +0900</pubDate>
       
       <guid>http://forestaa.github.io/blog/posts/liquidhaskell2/</guid>
-      <description>&lt;p&gt;&lt;a href=&#34;https://forestaa.github.io/blog/posts/liquidhaskell1/&#34;&gt;前回の記事&lt;/a&gt;ではLiquidHaskellの基礎を学びました。
+      <description>&lt;p&gt;&lt;a href=&#34;http://forestaa.github.io/blog/blog/posts/liquidhaskell1/&#34;&gt;前回の記事&lt;/a&gt;ではLiquidHaskellの基礎を学びました。
 今回はLiquidHaskellを用いて、とあるデータ型に対して、通常のHaskellの型の上に、実装者の暗黙の意図を反映したより細かい型をつけてみたいと思います。&lt;/p&gt;</description>
     </item>
     
