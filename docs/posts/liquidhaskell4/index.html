@@ -90,12 +90,15 @@ Abstract RefinementとBounded Refinementをガンガン使っていきます。"
 <li><a href="#evalのhoareモナドを用いたリファクタリング">evalのHoareモナドを用いたリファクタリング</a></li>
 <li><a href="#補足-hoareモナドの圏論的定義">補足: Hoareモナドの圏論的定義</a></li>
 <li><a href="#まとめ">まとめ</a></li>
+<li><a href="#参考文献">参考文献</a></li>
 </ul>
 </nav>
 </aside>
       <p><a href="/blog/posts/liquidhaskell3/">前回の記事</a>はLiquidHaskellの表現力を高める機能であるAbstract RefinementとBounded Refinementの解説をしました。
 今回は<a href="/blog/posts/liquidhaskell2/">前々回</a>のナイーブなコードを<strong>Hoareモナド</strong>を用いてHaskellらしいコードに書き直してみます。
 Abstract RefinementとBounded Refinementをガンガン使っていきます。</p>
+
+<p>今回書いたコードは<a href="https://gist.github.com/forestaa/4a5379061d992183d163935b90585fc9">gist</a>に公開しています。</p>
 
 <h1 id="liquidhaskellとstateモナド">LiquidHaskellとStateモナド</h1>
 
@@ -140,8 +143,7 @@ LiquidHaskellは確かに有用であることが分かりました。
 
 <h1 id="hoareモナド">Hoareモナド</h1>
 
-<p>Stateモナドに事前条件と事後条件をつけたようなものはNanevskiらの<strong>Hoareモナド</strong>として知られています。
-詳しくはAleksandar Nanevski, Greg Morrisett and Lars Birkedal. Hoare Type Thoery, Polymorphism and Separation. JFP 2007.を参照してください。
+<p>Stateモナドに事前条件と事後条件をつけたようなものはNanevskiらの<strong>Hoareモナド</strong><a href="#HTT">*1</a>として知られています。
 LiquidHaskell上で実装すると以下のようになります。
 前回解説したAbstract Refinementを用いています。
 通常のStateモナドに2つの述語パラメータ<code>p :: s -&gt; Bool</code>、<code>q :: a -&gt; s -&gt; s -&gt; Bool</code>を加えています。
@@ -264,7 +266,7 @@ Monad型クラスのインスタンスにしてdo構文を使うと、せっか�
 
 <p>Hoareモナドの実装はStateモナドにパラメータを付加したようなものになっていますが、そのせいでどういうモナドなのか直感的には分かりにくいと思います。(僕には分かりませんでした。)
 そのため、気になる人のためにHoareモナドの圏論的定義を確認します。
-Bart Jacobs. Dijkstra and Hoare monads in monadic computation. Theoretical Computer Science, Volume 604, 2015, Pages 30-45によると、Hoareモナドは圏論的には以下のように定義されます。
+Jacobs<a href="#Jacobs">*2</a>によると、Hoareモナドは圏論的には以下のように定義されます。
 簡単のためベースとなるモナドをIdentityモナドで固定します。</p>
 
 <div class="theoremlabel">
@@ -317,6 +319,13 @@ HoareモナドはStateモナドの状態に対して事前・事後条件を追�
 
 <p>当初の予定通り、Hoareモナドまで終わったので、今回でLiquidHaskell入門の連載を終わりにしたいと思います。
 ここまで見ていただきありがとうございました。</p>
+
+<h1 id="参考文献">参考文献</h1>
+
+<ul>
+<li><a name="HTT"> <a href="https://software.imdea.org/~aleks/papers/hoarelogic/jfpsep07.pdf">Aleksandar Nanevski, Greg Morrisett and Lars Birkedal. Hoare Type Thoery, Polymorphism and Separation. JFP 2007</a> </a></li>
+<li><a name="Jacobs"> <a href="http://www.cs.ru.nl/B.Jacobs/PAPERS/Dijkstra-monad-journal.pdf">Bart Jacobs. Dijkstra and Hoare monads in monadic computation. Theoretical Computer Science, Volume 604, 2015, Pages 30-45</a> </a></li>
+</ul>
     </article>
 
     

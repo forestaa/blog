@@ -86,6 +86,7 @@
 <li><a href="#bounded-refinement">Bounded Refinement</a></li>
 <li><a href="#補足-構文に関するいくつかの注意点">補足: 構文に関するいくつかの注意点</a></li>
 <li><a href="#まとめ">まとめ</a></li>
+<li><a href="#参考文献">参考文献</a></li>
 </ul>
 </nav>
 </aside>
@@ -124,7 +125,7 @@
    not a subtype of Required <span class="nb">type</span>
      VV : <span class="o">{</span>VV : GHC.Types.Int <span class="p">|</span> VV mod <span class="nv">2</span> <span class="o">==</span> <span class="m">0</span><span class="o">}</span></code></pre></div>
 それではこの関数につけるべき正しい型は何でしょうか？
-Abstrace Refinementは述語に対する量化を提供してくれます。
+Abstrace Refinement<a href="#ART">*1</a>は述語に対する全称量化を提供してくれます。
 つまり、<code>maxInt</code>に対しては以下のような型を付けることができます。
 <div class="highlight"><pre class="chroma"><code class="language-Haskell" data-lang="Haskell"><span class="cm">{-@ maxInt :: forall &lt;p :: Int -&gt; Bool&gt;. Int&lt;p&gt; -&gt; Int&lt;p&gt; -&gt; Int&lt;p&gt; @-}</span>
 <span class="nf">maxInt</span> <span class="ow">::</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">Int</span> <span class="ow">-&gt;</span> <span class="kt">Int</span>
@@ -181,7 +182,7 @@ Abstrace Refinementは述語に対する量化を提供してくれます。
 <h1 id="bounded-refinement">Bounded Refinement</h1>
 
 <p>有界量化や型クラスのように、全称量化を得たらそのドメインを制限して情報量を増やすような仕組みが欲しくなります。
-述語に対する全称量化であったAbstract Refinementに対し、そのドメインを制限するのがBounded Refinementです。
+述語に対する全称量化であったAbstract Refinementに対し、そのドメインを制限するのがBounded Refinement<a href="#BRT">*2</a>です。
 早速具体例を見ていきましょう。
 関数合成<code>(.)</code>は以下のように書けます。
 引数として2つの関数<code>f: (y:b -&gt; c&lt;p y&gt;)</code>、<code>g: (z:a -&gt; b&lt;q z&gt;)</code>を受け取って新しい関数<code>f . g: (a -&gt; c&lt;r x&gt;)</code>を返すのですが、<code>r</code>の条件として<code>{x::a, w::b&lt;q x&gt; |- c&lt;p w&gt; &lt;: c&lt;r x&gt;}</code>という制限を与えています。
@@ -228,9 +229,16 @@ Abstrace Refinementは述語に対する量化を提供してくれます。
 
 <p>今回はAbstract RefinementとBounded Refinementについて解説しました。
 LiquidHaskellでは量化子のない一階述語論理式しか書けませんが、Abstract Refinementは述語の全称量化、Bounded Refinementは述語の有界量化を提供します。
-これらによってLiquidHaskellで表現できる条件の幅が広がることを確認しました。</p>
+これらによってLiquidHaskellの表現力が広がることを確認しました。</p>
 
 <p><a href="/blog/posts/liquidhaskell4/">次回</a>はこれらを用いてHoareモナドを実装し、前回の評価機をHoareモナドを用いてよりHaskellらしいコードに書き直します。</p>
+
+<h1 id="参考文献">参考文献</h1>
+
+<ul>
+<li><a name="ART"> <a href="https://ranjitjhala.github.io/static/abstract_refinement_types.pdf">Niki Vazou, Patrick M. Rondon, and Ranjit Jhala. Abstract Refinement Types. ESOP&rsquo;13</a> </a></li>
+<li><a name="BRT"> <a href="https://arxiv.org/pdf/1507.00385.pdf">Niki Vazou, Alexander Bakst, Ranjit Jhala. Bounded Refinmenet Types. ICFP&rsquo;15</a> </a></li>
+</ul>
     </article>
 
     
