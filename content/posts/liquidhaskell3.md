@@ -50,7 +50,7 @@ $ stack exec -- liquid src/Liquid/AbstractRefinement.hs
 
 {{< /highlight >}}
 それではこの関数につけるべき正しい型は何でしょうか？
-Abstrace Refinementは述語に対する量化を提供してくれます。
+Abstrace Refinement[*1]({{< ref "#ART" >}})は述語に対する全称量化を提供してくれます。
 つまり、```maxInt```に対しては以下のような型を付けることができます。
 {{< highlight Haskell >}}
 {-@ maxInt :: forall <p :: Int -> Bool>. Int<p> -> Int<p> -> Int<p> @-}
@@ -116,7 +116,7 @@ $ stack exec -- liquid src/Liquid/AbstractRefinement.hs
 
 # Bounded Refinement
 有界量化や型クラスのように、全称量化を得たらそのドメインを制限して情報量を増やすような仕組みが欲しくなります。
-述語に対する全称量化であったAbstract Refinementに対し、そのドメインを制限するのがBounded Refinementです。
+述語に対する全称量化であったAbstract Refinementに対し、そのドメインを制限するのがBounded Refinement[*2]({{< ref "#BRT" >}})です。
 早速具体例を見ていきましょう。
 関数合成```(.)```は以下のように書けます。
 引数として2つの関数```f: (y:b -> c<p y>)```、```g: (z:a -> b<q z>)```を受け取って新しい関数```f . g: (a -> c<r x>)```を返すのですが、```r```の条件として```{x::a, w::b<q x> |- c<p w> <: c<r x>}```という制限を与えています。
@@ -163,6 +163,10 @@ $ stack exec -- liquid src/Liquid/AbstractRefinement.hs
 # まとめ
 今回はAbstract RefinementとBounded Refinementについて解説しました。
 LiquidHaskellでは量化子のない一階述語論理式しか書けませんが、Abstract Refinementは述語の全称量化、Bounded Refinementは述語の有界量化を提供します。
-これらによってLiquidHaskellで表現できる条件の幅が広がることを確認しました。
+これらによってLiquidHaskellの表現力が広がることを確認しました。
 
 [次回]({{< relref "liquidhaskell4" >}})はこれらを用いてHoareモナドを実装し、前回の評価機をHoareモナドを用いてよりHaskellらしいコードに書き直します。
+
+# 参考文献
+- <a name="ART"> [Niki Vazou, Patrick M. Rondon, and Ranjit Jhala. Abstract Refinement Types. ESOP'13](https://ranjitjhala.github.io/static/abstract_refinement_types.pdf) </a>
+- <a name="BRT"> [Niki Vazou, Alexander Bakst, Ranjit Jhala. Bounded Refinmenet Types. ICFP'15](https://arxiv.org/pdf/1507.00385.pdf) </a>
