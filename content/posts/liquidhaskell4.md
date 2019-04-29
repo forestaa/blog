@@ -1,7 +1,7 @@
 ---
 title: "LiquidHaskell 入門 その4"
-date: 2019-04-29T17:51:36+09:00
-draft: true
+date: 2019-04-29T18:38:36+09:00
+draft: false
 tags: ["Haskell", "形式検証"]
 ---
 
