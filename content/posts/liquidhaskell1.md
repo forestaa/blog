@@ -22,11 +22,9 @@ LiquidHaskellとはRefinement Typeを用いたHaskell用の検証ツールです
 Refinement Typeとは簡単に言うと、型に述語論理を組み合わせたようなものです。
 簡単な具体例を見てみましょう。
 以下は0でない整数の型をRefinement Typeを用いて表現したものです。
-
 {{< highlight Haskell >}}
 data NonZero = {v: Int | v /= 0}
 {{< /highlight >}}
-
 このように、内包表記によって既存の型に述語論理式を組み合わせて、Haskellの型より細かい型を与えることができます。
 特に、Haskellの関数の上に事前条件、事後条件を記述することができるようになり、より厳密な検証を可能にします。
 述語論理部分はz3などの、既存のSMTソルバーを用いて検証を行っています。
@@ -49,7 +47,6 @@ $ sudo pacman -S z3
 $ z3 --version 
 Z3 version 4.8.4 - 64 bit 
 {{< /highlight>}}
-
 LiquidHaskellのインストールはソースからビルドするのが安定です。
 {{< highlight bash >}}
 $ git clone --recursive https://github.com/ucsd-progsys/liquidhaskell.git
@@ -63,18 +60,14 @@ Copyright 2013-18 Regents of the University of California. All Rights Reserved.
 # 例1: 整数の除算
 簡単な例から始めてみましょう。
 題材としては```div```関数を用います。
-
 {{< highlight Haskell >}}
 div :: Int -> Int -> Int
 {{< /highlight>}}
-
 この関数は整数の除算を行いますが、第2引数が0のときはランタイムエラーを吐いてしまいます。
 ランタイムエラーはできるだけ避けたいため、以下の型を持つ```safeDiv```を使用する場合もあるかもしれません。
-
 {{< highlight Haskell >}}
 safeDiv :: Int -> Int -> Maybe Int
 {{< /highlight>}}
-
 これによってランタイムエラーを避けることができます。
 その代わりに、エラーが起きることを考慮してコードを書く必要ができ、負担が増加します。
 できるだけ安全なコードを書きたいのですが、第2引数に0が来ないことが静的に分かる場合でも```safeDiv```を使うことは避けたいです。
@@ -82,13 +75,11 @@ safeDiv :: Int -> Int -> Maybe Int
 
 このような場合にLiquidHaskellを使ってみましょう。
 とりあえず実験用のディレクトリを```stack new liquid-tutorial```で作って```liquid-tutorial/src/Lib.hs```に以下の関数を加えてください。
-
 {{< highlight Haskell >}}
 {-@ checkedDiv :: Int -> {v: Int | v /= 0} -> Int @-}
 checkedDiv :: Int -> Int -> Int
 checkedDiv = div
 {{< /highlight >}}
-
 下2行は普通のHaskellのコードです。
 1行目の```{-@ ... @-}```がLiquidHaskell用のコードです。
 Haskellでは```{- ... -}```はコメントと見なされるので、通常のコンパイルには問題ないです。
@@ -98,14 +89,11 @@ Haskellでは```{- ... -}```はコメントと見なされるので、通常の�
 このように、関数```checkedDiv```は第2引数は0でないということを事前条件として要求します。
 
 それでは実際にLiquidHaskellで検査してみます。0除算を行う以下の関数を```liquid-tutorial/src/Lib.hs```に加えてください。
-
 {{< highlight Haskell >}}
 test = 1 `checkedDiv` 0
 {{< /highlight >}}
-
 それでは、```stack exec -- liquid src/Lib.hs```のコマンドを実行してソースコードを検査してみてください。
 (```liquid src/Lib.hs```でもいいのですが、stackプロジェクトの場合は```stack exec```を通すことによってstackプロジェクトのライブラリが参照可能になります。)
-
 {{< highlight bash >}}
 $ stack exec -- liquid src/Lib.hs
 ...
@@ -125,7 +113,6 @@ $ stack exec -- liquid src/Lib.hs
      VV : {VV : GHC.Types.Int | VV /= 0}
 
 {{< /highlight >}}
-
 UNSAFEという結果が出ました。
 第2引数は```{v: GHC.Types.Int | v == 0}```という型に推論されていて、```{VV : GHC.Types.Int | VV /= 0}```という型の部分型にならないと言われています。
 ここでいう部分型というのは、$\\{ x: a \mid P\,x \\} \le \\{ x: a \mid Q\,x \\} \iff  P\,x \Rightarrow Q\,x$でだいたい定義されています。
@@ -140,16 +127,12 @@ Haskellでも型レベル自然数を使うと実装することもできます�
 LiquidHaskellを使ってもできるということを見ていきましょう。
 LiquidHaskellを用いれば、既存のコードそのままで長さが必要なところだけアノテーションをつけて検証することができます。
 長さ付きベクトルは以下のように定義できます。
-
-
 {{< highlight Haskell >}}
 {-@ type ListN a N = {v:[a] | len v = N} @-}
 {{< /highlight>}}
-
 ここではLiquidHaskellの型エイリアスを用いて定義しています。
 ここで```len```のような関数は、LiquidHaskellでは```measure```と呼ばれています。
 ```measure```は通常のHaskellの関数で、以下のように```measure```と宣言することで述語論理式の中に書くことができるようになります。
-
 {{< highlight Haskell >}}
 {-@ measure len @-}
 {-@ len :: forall a. [a] -> GHC.Types.Int @-}
@@ -157,10 +140,8 @@ len :: [a] -> Int
 len []     = 0
 len (y:ys) = 1 + len ys
 {{< /highlight >}}
-
 従って、先ほど定義した```ListN a N```は長さNのリストを表しています。
 これを用いていくつか関数を定義してみます。
-
 {{< highlight Haskell >}}
 {-@ map :: (a -> b) -> l: [a] -> ListN b (len l) @-}
 map :: (a -> b) -> [a] -> [b]
@@ -180,7 +161,6 @@ dot :: Num a => [a] -> [a] -> a
 dot [] [] = 0
 dot (a:as) (b:bs) = a * b + dot as bs
 {{< /highlight >}}
-
 ```map```関数は引数のリストと同じ長さのリストを返すという条件が事後条件として指定されています。
 ```map :: (a -> b) -> l: [a] -> ListN b (len l)```という型に注目してください。
 依存型のある言語と同様に、返り値の型が引数の項に依存しているような型を与えることもできます。(依存関数型と呼ばれます。)
@@ -207,7 +187,6 @@ LiquidHaskellはデフォルトでは関数に対して停止性を保証する�
 上で用いたリストの関数の例は、再帰呼び出しのたびに引数のリストの長さが単調減少するため自動で停止性が検査されていました。
 ここでは自動検証に失敗した場合にどうしたらいいかを見ていきます。
 以下の、2つの自然数を受け取ってそれらの最大公約数を返す関数```gcd```について考えてみましょう。
-
 {{< highlight Haskell >}}
 {-@ gcd :: m: Nat -> n: Nat -> Nat @-}
 gcd :: Int -> Int -> Int
@@ -216,7 +195,6 @@ gcd m n
   | m >= n    = gcd n (m `mod` n)
   | otherwise = gcd n m
 {{< /highlight >}}
-
 これをLiquidHaskellでコンパイルすると以下のエラーを受けます。
 {{< highlight bash >}}
 $ stack exec -- liquid src/Lib.hs
@@ -244,7 +222,6 @@ src/Lib.hs:54:17-21: Error: Liquid Type Mismatch
 ...
 
 {{< /highlight >}}
-
 今、型として書かれているのは```gcd :: m: Nat -> n: Nat -> Nat```だけなので、本来ならば自然数であることが示せていれば十分なはずですが、身に覚えのないエラーが出ています。
 このエラーは停止性の検査に関わるエラーです。
 身に覚えのないエラーが出てきたら、まずLiquidHaskellが停止性を検証しようとして失敗したのではないかとに疑ってみましょう。
@@ -281,7 +258,6 @@ $ stack exec -- liquid src/Lib.hs
 線形算術、未解釈関数を含む、量化子のない一階述語論理式を書くことができます。
 自動検証できるよう決定可能な範囲に絞っているため、証明は基本的に必要がありません。
 以下の構文のソースは[README.md](https://github.com/ucsd-progsys/liquidhaskell)です。
-
 {{< highlight bnf >}}
 c ::= 0, 1, 2, ...
 v ::= x, y, z, ...          
@@ -308,7 +284,6 @@ p ::= true
     | not p                 -- negation
 {{< /highlight >}}
 
-
 # まとめ
 今回はLiquidHaskellの基礎を確認しました。
 具体例を列挙する形で説明したので、最後にポイントを以下にまとめます。
@@ -319,7 +294,7 @@ p ::= true
 - 依存関数型も書ける・停止性の検査も可能
 - 言語を決定可能な範囲にしているため、自動検証が可能で基本的に証明を書く必要がない。
 
-次回は今回説明したことを用いて、スコープを持つ簡単な言語の評価関数を作ってみたいと思います。
+[次回](https://forestaa.github.io/blog/posts/liquidhaskell2/)は今回説明したことを用いて、スコープを持つ簡単な言語の評価関数を作ってみたいと思います。
 
 # (追記) 参考資料
 - [公式レポジトリ](https://github.com/ucsd-progsys/liquidhaskell)
