@@ -2,7 +2,7 @@ baseURL = "http://forestaa.github.io/blog"
 languageCode = "ja-jp"
 title = "存在と一意性の証明"
 theme = "whiteplain"
-publishDir = "docs"
+publishDir = "public"
 
 pygmentsUseClasses = true
 hasCJKLanguage = true
