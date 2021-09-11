@@ -1,0 +1,167 @@
+<!doctype html><html lang=ja-jp>
+<head>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1">
+<title>Haskell - 存在と一意性の証明</title>
+<meta property="og:title" content="Haskell - 存在と一意性の証明">
+<meta name=twitter:title content="Haskell - 存在と一意性の証明">
+<meta name=author content>
+<meta property="og:site_name" content="存在と一意性の証明">
+<meta property="og:url" content="http://forestaa.github.io/blog/tags/haskell/">
+<meta property="og:type" content="website">
+<meta name=twitter:card content="summary">
+<meta name=generator content="Hugo 0.88.1">
+<link href=/blog/tags/haskell/index.xml rel=alternate type=application/rss+xml title=存在と一意性の証明>
+<link href=/blog/tags/haskell/index.xml rel=feed type=application/rss+xml title=存在と一意性の証明>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/katex.min.css integrity=sha384-dbVIfZGuN1Yq7/1Ocstc1lUEm+AT+/rCkibIcC/OmWo5f0EA48Vf8CytHzGrSwbQ crossorigin=anonymous>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/katex.min.js integrity=sha384-2BKqo+exmr9su6dir+qCw08N2ZKRucY4PrGQPPWU1A7FtlCGjmEGFqXCv5nyM5Ij crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.10.1/dist/contrib/auto-render.min.js integrity=sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI crossorigin=anonymous></script>
+<script>document.addEventListener("DOMContentLoaded",function(){renderMathInElement(document.body,{delimiters:[{left:"[[",right:"]]",display:!0},{left:"$",right:"$",display:!1}]})})</script>
+<link rel=stylesheet href=/blog/css/style.css media=all>
+<link rel=stylesheet href=/blog/css/syntax.css media=all>
+<link rel=stylesheet href=/blog/css/custom.css media=all>
+<script src=/blog/js/script.js></script>
+<script src=/blog/js/custom.js></script>
+<script defer src=/blog/js/fontawesome.js></script>
+</head>
+<body>
+<header class=site-header>
+<nav class=site-navi>
+<h1 class=site-title><a href=/blog/>存在と一意性の証明</a></h1>
+<ul class=site-navi-items>
+<li class=site-navi-item-tags><a href=/blog/tags/ title=Tags>Tags</a></li>
+<li class=site-navi-item-archives><a href=/blog/archives/ title=Archives>Archives</a></li>
+<li class=site-navi-item-about><a href=/blog/about/ title=About>About</a></li>
+</ul>
+</nav>
+</header>
+<hr class=site-header-bottom>
+<div class=main role=main>
+<section class="list term-list">
+<article class=article>
+<a href=/blog/posts/liquidhaskell4/ class=article-titles>
+<h2 class=article-title>LiquidHaskell 入門 その4</h2>
+</a>
+<ul class=article-meta>
+<li class=article-meta-date><time>April 29, 2019</time></li>
+<li class=article-meta-tags>
+<a href=/blog/tags/haskell/>
+<i class="fas fa-tag"></i>
+Haskell
+</a>&nbsp;
+</li>
+<li class=article-meta-tags>
+<a href=/blog/tags/%E5%BD%A2%E5%BC%8F%E6%A4%9C%E8%A8%BC/>
+<i class="fas fa-tag"></i>
+形式検証
+</a>&nbsp;
+</li>
+</ul>
+<div class=article-content>
+<p><a href=/blog/posts/liquidhaskell3/>前回の記事</a>はLiquidHaskellの表現力を高める機能であるAbstract RefinementとBounded Refinementの解説をしました。
+今回は<a href=/blog/posts/liquidhaskell2/>前々回</a>のナイーブなコードを<strong>Hoareモナド</strong>を用いてHaskellらしいコードに書き直してみます。
+Abstract RefinementとBounded Refinementをガンガン使っていきます。</p>
+</div>
+<div class=article-readmore><a href=/blog/posts/liquidhaskell4/>Read more...</a></div>
+<div class=article-floatclear></div>
+</article>
+<article class=article>
+<a href=/blog/posts/liquidhaskell3/ class=article-titles>
+<h2 class=article-title>LiquidHaskell 入門 その3</h2>
+</a>
+<ul class=article-meta>
+<li class=article-meta-date><time>April 29, 2019</time></li>
+<li class=article-meta-tags>
+<a href=/blog/tags/haskell/>
+<i class="fas fa-tag"></i>
+Haskell
+</a>&nbsp;
+</li>
+<li class=article-meta-tags>
+<a href=/blog/tags/%E5%BD%A2%E5%BC%8F%E6%A4%9C%E8%A8%BC/>
+<i class="fas fa-tag"></i>
+形式検証
+</a>&nbsp;
+</li>
+</ul>
+<div class=article-content>
+<p><a href=/blog/posts/liquidhaskell2/>前回の記事</a>ではLiquidHaskellを用いて簡単な言語の評価機を作ってみました。
+今回はそれをStateモナドを用いて書き直すために必要な新しい機能である<strong>Abstarct Refinement</strong>, <strong>Bounded Refinmenet</strong>の解説をしていきたいと思います。</p>
+</div>
+<div class=article-readmore><a href=/blog/posts/liquidhaskell3/>Read more...</a></div>
+<div class=article-floatclear></div>
+</article>
+<article class=article>
+<a href=/blog/posts/liquidhaskell2/ class=article-titles>
+<h2 class=article-title>LiquidHaskell 入門 その2</h2>
+</a>
+<ul class=article-meta>
+<li class=article-meta-date><time>March 29, 2019</time></li>
+<li class=article-meta-tags>
+<a href=/blog/tags/haskell/>
+<i class="fas fa-tag"></i>
+Haskell
+</a>&nbsp;
+</li>
+<li class=article-meta-tags>
+<a href=/blog/tags/%E5%BD%A2%E5%BC%8F%E6%A4%9C%E8%A8%BC/>
+<i class="fas fa-tag"></i>
+形式検証
+</a>&nbsp;
+</li>
+</ul>
+<div class=article-content>
+<p><a href=/blog/posts/liquidhaskell1/>前回の記事</a>ではLiquidHaskellの基礎を学びました。
+今回はLiquidHaskellを用いて、とあるデータ型に対して、通常のHaskellの型の上に、実装者の暗黙の意図を反映したより細かい型をつけてみたいと思います。</p>
+</div>
+<div class=article-readmore><a href=/blog/posts/liquidhaskell2/>Read more...</a></div>
+<div class=article-floatclear></div>
+</article>
+<article class=article>
+<a href=/blog/posts/liquidhaskell1/ class=article-titles>
+<h2 class=article-title>LiquidHaskell 入門 その1</h2>
+</a>
+<ul class=article-meta>
+<li class=article-meta-date><time>March 22, 2019</time></li>
+<li class=article-meta-tags>
+<a href=/blog/tags/haskell/>
+<i class="fas fa-tag"></i>
+Haskell
+</a>&nbsp;
+</li>
+<li class=article-meta-tags>
+<a href=/blog/tags/%E5%BD%A2%E5%BC%8F%E6%A4%9C%E8%A8%BC/>
+<i class="fas fa-tag"></i>
+形式検証
+</a>&nbsp;
+</li>
+</ul>
+<div class=article-content>
+<p>今回から何回かに分けて <strong>LiquidHaskell</strong>と<strong>F</strong><em>の比較記事を書きたいと思います。
+数か月前にいつか触ろうと思っていたLiquidHaskellを試す機会がありました。
+やりたかったことがLiquidHaskellだけでは達成できなかったのでF</em>も試してみました。
+その時に見つけた差異を記事にしてみます。
+先にネタバレしておくと、HoareモナドはLiquidHaskellではできない?けどF*なら当たり前のように使えるよねっていう話なので、面白そうと思う方は読んでいただけると嬉しいです。
+今回の記事では、LiquidHaskellの基礎をまとめることにします。
+Haskellを触ったことがある人なら読める内容にしているつもりです。</p>
+</div>
+<div class=article-readmore><a href=/blog/posts/liquidhaskell1/>Read more...</a></div>
+<div class=article-floatclear></div>
+</article>
+</section>
+</div>
+<div class=site-footer>
+<div class=copyright></div>
+<ul class=site-footer-items>
+<li class=site-footer-item-rsslink>
+<a href=/blog/tags/haskell/index.xml type=application/rss+xml target=_blank title=RSS>
+<i class="fas fa-rss"></i>
+</a>
+</li>
+</ul>
+<div class=powerdby>
+Powered by <a href=https://gohugo.io/>Hugo</a> and <a href=https://github.com/taikii/whiteplain>Whiteplain</a>
+</div>
+</div>
+</body>
+</html>
